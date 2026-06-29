@@ -7,11 +7,13 @@ const INSTALL_PROMPT_READY_EVENT = 'loadr-installprompt-ready';
 const SW_READY_EVENT = 'loadr-sw-ready';
 
 let deferredInstallPrompt: BeforeInstallPromptEvent | null = null;
+let ensurePromise: Promise<boolean> | null = null;
 
 export const pwaInstallState = $state({
 	promptAvailable: false,
-	manualInstallHint: false,
-	preparing: false
+	waitingForPrompt: false,
+	installPromptChecked: false,
+	manualInstallHint: false
 });
 
 function setPromptAvailable(available: boolean) {
@@ -30,6 +32,7 @@ function captureInstallPrompt(event: Event) {
 
 	setPromptAvailable(true);
 	pwaInstallState.manualInstallHint = false;
+	pwaInstallState.waitingForPrompt = false;
 }
 
 export function refreshInstallPromptState(): boolean {
@@ -42,10 +45,13 @@ export function refreshInstallPromptState(): boolean {
 	if (stored) {
 		deferredInstallPrompt = stored;
 		setPromptAvailable(true);
+		pwaInstallState.waitingForPrompt = false;
 		return true;
 	}
 
-	return deferredInstallPrompt !== null;
+	const available = deferredInstallPrompt !== null;
+	setPromptAvailable(available);
+	return available;
 }
 
 export function initPwaInstallPrompt(): () => void {
@@ -58,10 +64,15 @@ export function initPwaInstallPrompt(): () => void {
 	window.addEventListener(SW_READY_EVENT, onReady);
 	window.addEventListener('beforeinstallprompt', captureInstallPrompt);
 
+	if ('serviceWorker' in navigator) {
+		navigator.serviceWorker.addEventListener('controllerchange', onReady);
+	}
+
 	return () => {
 		window.removeEventListener(INSTALL_PROMPT_READY_EVENT, onReady);
 		window.removeEventListener(SW_READY_EVENT, onReady);
 		window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
+		navigator.serviceWorker?.removeEventListener('controllerchange', onReady);
 	};
 }
 
@@ -79,68 +90,77 @@ export function isIosBrowser(): boolean {
 	return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
-export function canOfferPwaInstall(): boolean {
-	if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
-	if (isStandalonePwa() || isIosBrowser()) return false;
-
-	return (
-		'onbeforeinstallprompt' in window ||
-		/(chrome|crios|brave|chromium|edg|opr)\//i.test(navigator.userAgent)
-	);
-}
-
 export function buildActivateUrl(origin: string, token: string): string {
 	const params = new URLSearchParams({ token });
 	return `${origin}/activate?${params.toString()}`;
 }
 
-/** Wait for SW registration and the browser's deferred install prompt. */
-export async function ensureInstallPrompt(timeoutMs = 10_000): Promise<boolean> {
-	if (typeof window === 'undefined') return false;
-
-	if (refreshInstallPromptState()) return true;
-
-	if ('serviceWorker' in navigator) {
-		try {
-			await Promise.race([
-				navigator.serviceWorker.ready,
-				new Promise<void>((resolve) => window.setTimeout(resolve, 4_000))
-			]);
-		} catch {
-			// Continue — prompt may still arrive.
-		}
+/** Wait for SW + deferred install prompt. Call on page load, not on button click. */
+export function ensureInstallPrompt(timeoutMs = 12_000): Promise<boolean> {
+	if (typeof window === 'undefined') return Promise.resolve(false);
+	if (refreshInstallPromptState()) {
+		pwaInstallState.installPromptChecked = true;
+		return Promise.resolve(true);
 	}
+	if (ensurePromise) return ensurePromise;
 
-	if (refreshInstallPromptState()) return true;
+	pwaInstallState.waitingForPrompt = true;
 
-	return new Promise((resolve) => {
-		let settled = false;
+	ensurePromise = (async () => {
+		if ('serviceWorker' in navigator) {
+			try {
+				await Promise.race([
+					navigator.serviceWorker.ready,
+					new Promise<void>((resolve) => window.setTimeout(resolve, 5_000))
+				]);
+			} catch {
+				// Continue — prompt may still arrive.
+			}
+		}
 
-		const finish = (success: boolean) => {
-			if (settled) return;
-			settled = true;
-			window.clearTimeout(timeout);
-			window.removeEventListener(INSTALL_PROMPT_READY_EVENT, onReady);
-			window.removeEventListener(SW_READY_EVENT, onReady);
-			window.removeEventListener('beforeinstallprompt', onCapture);
-			resolve(success);
-		};
+		if (refreshInstallPromptState()) return true;
 
-		const timeout = window.setTimeout(() => finish(refreshInstallPromptState()), timeoutMs);
+		const ready = await new Promise<boolean>((resolve) => {
+			let settled = false;
 
-		const onReady = () => {
-			if (refreshInstallPromptState()) finish(true);
-		};
+			const finish = (success: boolean) => {
+				if (settled) return;
+				settled = true;
+				window.clearTimeout(timeout);
+				window.removeEventListener(INSTALL_PROMPT_READY_EVENT, onReady);
+				window.removeEventListener(SW_READY_EVENT, onReady);
+				window.removeEventListener('beforeinstallprompt', onCapture);
+				resolve(success);
+			};
 
-		const onCapture = (event: Event) => {
-			captureInstallPrompt(event);
-			finish(true);
-		};
+			const timeout = window.setTimeout(
+				() => finish(refreshInstallPromptState()),
+				timeoutMs
+			);
 
-		window.addEventListener(INSTALL_PROMPT_READY_EVENT, onReady);
-		window.addEventListener(SW_READY_EVENT, onReady);
-		window.addEventListener('beforeinstallprompt', onCapture);
+			const onReady = () => {
+				if (refreshInstallPromptState()) finish(true);
+			};
+
+			const onCapture = (event: Event) => {
+				captureInstallPrompt(event);
+				finish(true);
+			};
+
+			window.addEventListener(INSTALL_PROMPT_READY_EVENT, onReady);
+			window.addEventListener(SW_READY_EVENT, onReady);
+			window.addEventListener('beforeinstallprompt', onCapture);
+		});
+
+		pwaInstallState.waitingForPrompt = false;
+		return ready;
+	})().finally(() => {
+		ensurePromise = null;
+		pwaInstallState.waitingForPrompt = false;
+		pwaInstallState.installPromptChecked = true;
 	});
+
+	return ensurePromise;
 }
 
 export async function promptPwaInstall(): Promise<boolean> {
@@ -162,8 +182,7 @@ export async function promptPwaInstall(): Promise<boolean> {
 }
 
 export function canPromptPwaInstall(): boolean {
-	refreshInstallPromptState();
-	return deferredInstallPrompt !== null;
+	return refreshInstallPromptState();
 }
 
 export function showManualInstallHint(): void {
@@ -172,12 +191,4 @@ export function showManualInstallHint(): void {
 
 export function clearManualInstallHint(): void {
 	pwaInstallState.manualInstallHint = false;
-}
-
-export function beginInstallPreparation(): void {
-	pwaInstallState.preparing = true;
-}
-
-export function endInstallPreparation(): void {
-	pwaInstallState.preparing = false;
 }

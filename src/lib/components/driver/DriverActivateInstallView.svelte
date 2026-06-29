@@ -6,11 +6,9 @@
 	import DriverActivateProgress from '$lib/components/driver/DriverActivateProgress.svelte';
 	import DriverActivateTopNav from '$lib/components/driver/DriverActivateTopNav.svelte';
 	import {
-		beginInstallPreparation,
 		buildActivateUrl,
-		canOfferPwaInstall,
+		canPromptPwaInstall,
 		clearManualInstallHint,
-		endInstallPreparation,
 		ensureInstallPrompt,
 		isIosBrowser,
 		isStandalonePwa,
@@ -35,7 +33,18 @@
 	const activationUrl = $derived(buildActivateUrl(page.url.origin, token));
 	const appHost = $derived(page.url.host);
 	const installEnabled = $derived(
-		!installing && (pwaInstallState.promptAvailable || canOfferPwaInstall() || preview)
+		!installing &&
+			!pwaInstallState.waitingForPrompt &&
+			(pwaInstallState.promptAvailable || pwaInstallState.installPromptChecked || preview)
+	);
+	const installLabel = $derived(
+		pwaInstallState.waitingForPrompt
+			? 'Preparing…'
+			: installing
+				? 'Installing…'
+				: pwaInstallState.promptAvailable
+					? 'Install'
+					: 'Install'
 	);
 
 	function continueToSetup() {
@@ -59,33 +68,29 @@
 	}
 
 	async function handleInstallClick() {
-		if (installing || pwaInstallState.preparing) return;
+		if (installing || pwaInstallState.waitingForPrompt) return;
 
 		clearManualInstallHint();
-		beginInstallPreparation();
 
-		try {
-			const ready = await ensureInstallPrompt();
-
-			if (ready && refreshInstallPromptState()) {
-				installing = true;
-				const accepted = await promptPwaInstall();
-				if (accepted && !preview) {
-					void goto(setupHref);
-				}
-				return;
-			}
-
+		if (!canPromptPwaInstall()) {
 			showManualInstallHint();
+			return;
+		}
+
+		installing = true;
+		try {
+			const accepted = await promptPwaInstall();
+			if (accepted && !preview) {
+				void goto(setupHref);
+			}
 		} finally {
 			installing = false;
-			endInstallPreparation();
 		}
 	}
 
 	onMount(() => {
 		refreshInstallPromptState();
-		void ensureInstallPrompt().then(() => refreshInstallPromptState());
+		void ensureInstallPrompt();
 
 		if (!preview && isStandalonePwa()) {
 			void goto(setupHref);
@@ -185,7 +190,15 @@
 					Add to your home screen
 				</p>
 				<p class="font-inter text-xs leading-[1.55] text-gray-500 dark:text-slate-400">
-					Tap Install when your browser prompts you.
+					{#if pwaInstallState.waitingForPrompt}
+						Setting up install — this usually takes a few seconds.
+					{:else if pwaInstallState.promptAvailable}
+						Tap Install to add Loadr to your home screen.
+					{:else if pwaInstallState.installPromptChecked}
+						Your browser may not show an in-page install button. Use the menu option below.
+					{:else}
+						Install will be available once your browser is ready.
+					{/if}
 				</p>
 				<div
 					class="flex h-14 items-center gap-2.5 rounded-xl border-[1.5px] border-brand bg-gray-50 px-3 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:bg-slate-900 dark:shadow-[0_4px_12px_rgba(0,0,0,0.25)]"
@@ -208,14 +221,10 @@
 					<button
 						type="button"
 						class="shrink-0 rounded-lg bg-brand px-4 py-2 font-inter text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-						disabled={!installEnabled || pwaInstallState.preparing || installing}
+						disabled={!installEnabled}
 						onclick={handleInstallClick}
 					>
-						{pwaInstallState.preparing
-							? 'Preparing…'
-							: installing
-								? 'Installing…'
-								: 'Install'}
+						{installLabel}
 					</button>
 				</div>
 				<p class="font-inter text-[11px] text-gray-400 dark:text-slate-500">
