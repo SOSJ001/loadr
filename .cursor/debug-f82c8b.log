@@ -1,1 +1,0 @@
-{"sessionId":"f82c8b","location":"hooks.server.ts:unreachableSkipRefresh","message":"supabase unreachable — skipping getSession refresh","data":{"pathname":"/activate","expiresAt":1782488153},"timestamp":1782513241979,"hypothesisId":"A"}
