@@ -7,6 +7,7 @@
 	import DriverActivateTopNav from '$lib/components/driver/DriverActivateTopNav.svelte';
 	import {
 		buildActivateUrl,
+		canContinueAfterInstall,
 		canPromptPwaInstall,
 		clearManualInstallHint,
 		ensureInstallPrompt,
@@ -15,7 +16,8 @@
 		promptPwaInstall,
 		pwaInstallState,
 		refreshInstallPromptState,
-		showManualInstallHint
+		showManualInstallHint,
+		refreshPwaInstalledState
 	} from '$lib/utils/pwa-install.svelte';
 
 	type Props = {
@@ -40,11 +42,19 @@
 	const installLabel = $derived(
 		pwaInstallState.waitingForPrompt
 			? 'Preparing…'
-			: installing
+			: installing || pwaInstallState.installPending
 				? 'Installing…'
-				: pwaInstallState.promptAvailable
-					? 'Install'
-					: 'Install'
+				: 'Install'
+	);
+	const canContinueToSetup = $derived(preview || isIosBrowser() || canContinueAfterInstall());
+	const continueHint = $derived(
+		pwaInstallState.installPending
+			? 'Adding Loadr to your home screen…'
+			: pwaInstallState.installAccepted && !pwaInstallState.installConfirmed
+				? 'Install did not finish. Check your app drawer, then try Install again.'
+				: pwaInstallState.installConfirmed
+					? 'Loadr is installed. Open it from your home screen or app drawer when you are ready.'
+					: 'Install Loadr before creating your password.'
 	);
 
 	function continueToSetup() {
@@ -79,9 +89,9 @@
 
 		installing = true;
 		try {
-			const accepted = await promptPwaInstall();
-			if (accepted && !preview) {
-				void goto(setupHref);
+			const { accepted, confirmed } = await promptPwaInstall();
+			if (accepted && !confirmed) {
+				showManualInstallHint();
 			}
 		} finally {
 			installing = false;
@@ -91,10 +101,20 @@
 	onMount(() => {
 		refreshInstallPromptState();
 		void ensureInstallPrompt();
+		void refreshPwaInstalledState();
 
 		if (!preview && isStandalonePwa()) {
 			void goto(setupHref);
 		}
+
+		const onVisible = () => {
+			if (!preview && isStandalonePwa()) {
+				void goto(setupHref);
+			}
+		};
+
+		document.addEventListener('visibilitychange', onVisible);
+		return () => document.removeEventListener('visibilitychange', onVisible);
 	});
 </script>
 
@@ -190,7 +210,14 @@
 					Add to your home screen
 				</p>
 				<p class="font-inter text-xs leading-[1.55] text-gray-500 dark:text-slate-400">
-					{#if pwaInstallState.waitingForPrompt}
+					{#if pwaInstallState.installPending}
+						Finishing install — check your home screen or app drawer in a moment.
+					{:else if pwaInstallState.installConfirmed}
+						Loadr is on your device. Look for the Loadr icon on your home screen or in your app
+						drawer.
+					{:else if pwaInstallState.installAccepted}
+						If you do not see Loadr on your home screen, open your app drawer or try Install again.
+					{:else if pwaInstallState.waitingForPrompt}
 						Setting up install — this usually takes a few seconds.
 					{:else if pwaInstallState.promptAvailable}
 						Tap Install to add Loadr to your home screen.
@@ -251,9 +278,13 @@
 	<div
 		class="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white px-5 pt-4 pb-[34px] dark:border-slate-700 dark:bg-slate-900"
 	>
+		<p class="font-inter mx-auto mb-3 max-w-[350px] text-center text-[11px] leading-[1.5] text-gray-500 dark:text-slate-400">
+			{continueHint}
+		</p>
 		<button
 			type="button"
-			class="font-syne mx-auto flex h-[52px] w-full max-w-[350px] items-center justify-center gap-2 rounded-[10px] bg-brand text-[15px] font-bold text-white transition-opacity hover:opacity-90"
+			class="font-syne mx-auto flex h-[52px] w-full max-w-[350px] items-center justify-center gap-2 rounded-[10px] bg-brand text-[15px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+			disabled={!canContinueToSetup}
 			onclick={continueToSetup}
 		>
 			Continue to create password

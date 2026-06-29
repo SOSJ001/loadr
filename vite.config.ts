@@ -20,7 +20,7 @@ export default defineConfig({
 				'icons/icon-512-maskable.svg'
 			],
 			manifest: {
-				id: '/',
+				id: '/login/driver',
 				name: 'Loadr Driver',
 				short_name: 'Loadr',
 				description: 'Loadr driver app for delivery jobs and proof of capture',
@@ -28,6 +28,8 @@ export default defineConfig({
 				start_url: '/login/driver',
 				scope: '/',
 				display: 'standalone',
+				display_override: ['standalone', 'browser'],
+				prefer_related_applications: false,
 				background_color: '#f9fafb',
 				theme_color: '#111827',
 				icons: [
