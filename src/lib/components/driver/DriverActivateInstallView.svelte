@@ -7,10 +7,13 @@
 	import DriverActivateTopNav from '$lib/components/driver/DriverActivateTopNav.svelte';
 	import {
 		buildActivateUrl,
+		canOfferPwaInstall,
+		clearManualInstallHint,
 		isIosBrowser,
 		isStandalonePwa,
 		promptPwaInstall,
-		pwaInstallState
+		pwaInstallState,
+		showManualInstallHint
 	} from '$lib/utils/pwa-install.svelte';
 
 	type Props = {
@@ -28,7 +31,7 @@
 	const activationUrl = $derived(buildActivateUrl(page.url.origin, token));
 	const appHost = $derived(page.url.host);
 	const installEnabled = $derived(
-		!installing && (pwaInstallState.promptAvailable || preview)
+		!installing && (pwaInstallState.promptAvailable || canOfferPwaInstall() || preview)
 	);
 
 	function continueToSetup() {
@@ -54,19 +57,22 @@
 	async function handleInstallClick() {
 		if (installing) return;
 
-		if (!pwaInstallState.promptAvailable) {
+		clearManualInstallHint();
+
+		if (pwaInstallState.promptAvailable) {
+			installing = true;
+			try {
+				const accepted = await promptPwaInstall();
+				if (accepted && !preview) {
+					void goto(setupHref);
+				}
+			} finally {
+				installing = false;
+			}
 			return;
 		}
 
-		installing = true;
-		try {
-			const accepted = await promptPwaInstall();
-			if (accepted && !preview) {
-				void goto(setupHref);
-			}
-		} finally {
-			installing = false;
-		}
+		showManualInstallHint();
 	}
 
 	onMount(() => {
@@ -198,13 +204,20 @@
 					</button>
 				</div>
 				<p class="font-inter text-[11px] text-gray-400 dark:text-slate-500">
-					<span class="font-medium">No Install button?</span>
-					{#if isIosBrowser()}
-						<span class="text-gray-500 dark:text-slate-400"> Share → Add to Home Screen</span>
-					{:else}
-						<span class="text-gray-500 dark:text-slate-400">
-							Use your browser menu → Install app
+					{#if pwaInstallState.manualInstallHint}
+						<span class="font-medium text-amber-600 dark:text-amber-500">
+							Open the browser menu (⋮) → Install Loadr, or look for the install icon in the
+							address bar.
 						</span>
+					{:else}
+						<span class="font-medium">No Install button?</span>
+						{#if isIosBrowser()}
+							<span class="text-gray-500 dark:text-slate-400"> Share → Add to Home Screen</span>
+						{:else}
+							<span class="text-gray-500 dark:text-slate-400">
+								Use your browser menu → Install app
+							</span>
+						{/if}
 					{/if}
 				</p>
 			</section>

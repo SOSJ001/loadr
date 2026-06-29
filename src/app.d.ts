@@ -17,6 +17,10 @@ declare global {
 			profile: UserProfile | null;
 		}
 	}
+
+	interface Window {
+		__loadrDeferredInstallPrompt?: Event | null;
+	}
 }
 
 export {};

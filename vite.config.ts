@@ -18,6 +18,7 @@ export default defineConfig({
 				'icons/icon-512-maskable.svg'
 			],
 			manifest: {
+				id: '/',
 				name: 'Loadr Driver',
 				short_name: 'Loadr',
 				description: 'Loadr driver app for delivery jobs and proof of capture',
