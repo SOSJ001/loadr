@@ -6,13 +6,17 @@
 	import DriverActivateProgress from '$lib/components/driver/DriverActivateProgress.svelte';
 	import DriverActivateTopNav from '$lib/components/driver/DriverActivateTopNav.svelte';
 	import {
+		beginInstallPreparation,
 		buildActivateUrl,
 		canOfferPwaInstall,
 		clearManualInstallHint,
+		endInstallPreparation,
+		ensureInstallPrompt,
 		isIosBrowser,
 		isStandalonePwa,
 		promptPwaInstall,
 		pwaInstallState,
+		refreshInstallPromptState,
 		showManualInstallHint
 	} from '$lib/utils/pwa-install.svelte';
 
@@ -55,27 +59,34 @@
 	}
 
 	async function handleInstallClick() {
-		if (installing) return;
+		if (installing || pwaInstallState.preparing) return;
 
 		clearManualInstallHint();
+		beginInstallPreparation();
 
-		if (pwaInstallState.promptAvailable) {
-			installing = true;
-			try {
+		try {
+			const ready = await ensureInstallPrompt();
+
+			if (ready && refreshInstallPromptState()) {
+				installing = true;
 				const accepted = await promptPwaInstall();
 				if (accepted && !preview) {
 					void goto(setupHref);
 				}
-			} finally {
-				installing = false;
+				return;
 			}
-			return;
-		}
 
-		showManualInstallHint();
+			showManualInstallHint();
+		} finally {
+			installing = false;
+			endInstallPreparation();
+		}
 	}
 
 	onMount(() => {
+		refreshInstallPromptState();
+		void ensureInstallPrompt().then(() => refreshInstallPromptState());
+
 		if (!preview && isStandalonePwa()) {
 			void goto(setupHref);
 		}
@@ -197,10 +208,14 @@
 					<button
 						type="button"
 						class="shrink-0 rounded-lg bg-brand px-4 py-2 font-inter text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-						disabled={!installEnabled}
+						disabled={!installEnabled || pwaInstallState.preparing || installing}
 						onclick={handleInstallClick}
 					>
-						{installing ? 'Installing…' : 'Install'}
+						{pwaInstallState.preparing
+							? 'Preparing…'
+							: installing
+								? 'Installing…'
+								: 'Install'}
 					</button>
 				</div>
 				<p class="font-inter text-[11px] text-gray-400 dark:text-slate-500">

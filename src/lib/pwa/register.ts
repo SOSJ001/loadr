@@ -13,6 +13,7 @@ export function registerDriverPwa(): void {
 				registration.update().catch(() => {
 					// Best-effort update check.
 				});
+				window.dispatchEvent(new Event('loadr-sw-ready'));
 			}
 		}
 	});
