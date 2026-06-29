@@ -1,0 +1,2 @@
+-- Loadr seed data placeholder
+-- Add demo companies, users, and jobs here for local development.
