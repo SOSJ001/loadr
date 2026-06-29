@@ -148,32 +148,25 @@
 				class="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3.5 dark:border-slate-600 dark:bg-slate-800"
 			>
 				<p class="font-inter text-sm font-semibold text-gray-900 dark:text-slate-100">
-					Use Chrome or Brave
+					Use Chrome
 				</p>
 				<p class="font-inter text-xs leading-[1.55] text-gray-500 dark:text-slate-400">
-					Install Chrome or Brave if needed, then open this activation link there.
+					Install Chrome if needed, then open this activation link there.
 				</p>
 				<div class="flex flex-wrap gap-2">
 					<div
 						class="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 dark:border-slate-600 dark:bg-slate-900"
 					>
-						<span
-							class="size-4 rounded-full bg-[#4285F4]"
-							aria-hidden="true"
-						></span>
+						<img
+							src="/icons/chrome.png"
+							srcset="/icons/chrome.png 1x, /icons/chrome@2x.png 2x"
+							alt=""
+							class="size-5 shrink-0"
+							width="20"
+							height="20"
+						/>
 						<span class="font-inter text-xs font-medium text-gray-900 dark:text-slate-100"
 							>Chrome</span
-						>
-					</div>
-					<div
-						class="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2.5 py-1.5 dark:border-slate-600 dark:bg-slate-900"
-					>
-						<span
-							class="size-4 rounded-full bg-[#FB542B]"
-							aria-hidden="true"
-						></span>
-						<span class="font-inter text-xs font-medium text-gray-900 dark:text-slate-100"
-							>Brave</span
 						>
 					</div>
 				</div>
@@ -257,7 +250,7 @@
 				<p class="font-inter text-[11px] text-gray-400 dark:text-slate-500">
 					{#if pwaInstallState.manualInstallHint}
 						<span class="font-medium text-amber-600 dark:text-amber-500">
-							Open the browser menu (⋮) → Install Loadr, or look for the install icon in the
+							In Chrome, open the menu (⋮) → Install Loadr, or look for the install icon in the
 							address bar.
 						</span>
 					{:else}
@@ -266,7 +259,7 @@
 							<span class="text-gray-500 dark:text-slate-400"> Share → Add to Home Screen</span>
 						{:else}
 							<span class="text-gray-500 dark:text-slate-400">
-								Use your browser menu → Install app
+								In Chrome, use the menu (⋮) → Install app
 							</span>
 						{/if}
 					{/if}

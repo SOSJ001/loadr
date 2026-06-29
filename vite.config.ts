@@ -17,7 +17,10 @@ export default defineConfig({
 				'icons/icon-512-maskable.png',
 				'icons/apple-touch-icon.png',
 				'icons/icon-512.svg',
-				'icons/icon-512-maskable.svg'
+				'icons/icon-512-maskable.svg',
+				'icons/chrome.svg',
+				'icons/chrome.png',
+				'icons/chrome@2x.png'
 			],
 			manifest: {
 				id: '/login/driver',
