@@ -4,8 +4,9 @@
 	import type { Snippet } from 'svelte';
 	import OperatorShell from '$lib/components/operator/OperatorShell.svelte';
 	import OperatorDesktopRequired from '$lib/components/operator/OperatorDesktopRequired.svelte';
+	import OperatorDashboardLoadingView from '$lib/components/operator/skeleton/OperatorDashboardLoadingView.svelte';
 	import { initTheme, setTheme } from '$lib/stores/theme.svelte';
-	import { isOperatorDarkPreview } from '$lib/utils/operator-preview';
+	import { isOperatorDarkPreview, isOperatorLoadingPreview } from '$lib/utils/operator-preview';
 	import type { UserProfile } from '$lib/types/user';
 
 	type Props = {
@@ -19,6 +20,7 @@
 
 	const preview = $derived(page.url.searchParams.get('preview'));
 	const forceMobile = $derived(preview === 'mobile' || preview === 'mobile-dark');
+	const loadingPreview = $derived(isOperatorLoadingPreview(preview));
 
 	onMount(() => {
 		initTheme();
@@ -33,7 +35,11 @@
 </div>
 
 <div class={forceMobile ? 'hidden' : 'hidden h-dvh lg:block'}>
-	<OperatorShell {profile} {companyName} {plan}>
-		{@render children()}
-	</OperatorShell>
+	{#if loadingPreview}
+		<OperatorDashboardLoadingView />
+	{:else}
+		<OperatorShell {profile} {companyName} {plan}>
+			{@render children()}
+		</OperatorShell>
+	{/if}
 </div>

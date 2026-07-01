@@ -8,6 +8,16 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const preview = url.searchParams.get('preview');
 
+	if (preview === 'loading' || preview === 'loading-dark') {
+		return {
+			stats: { pending: 0, inProgress: 0, completedToday: 0 },
+			recentJobs: [],
+			showOnboardingBanner: false,
+			showPendingVerificationBanner: false,
+			hoverPreviewJobId: null
+		};
+	}
+
 	if (preview === 'pending-verification') {
 		return getMockDashboardPendingVerification();
 	}

@@ -18,3 +18,59 @@
 		-moz-osx-font-smoothing: grayscale;
 	}
 }
+
+/* Figma 1012:2104 — skeleton shimmer */
+@keyframes skeleton-shimmer {
+	0% {
+		background-position: -200% center;
+	}
+	100% {
+		background-position: 200% center;
+	}
+}
+
+@keyframes skeleton-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@layer components {
+	.skeleton-block-shimmer {
+		--skel-base: #e5e7eb;
+		--skel-shine: #f9fafb;
+		background: linear-gradient(
+			105deg,
+			var(--skel-base) 40%,
+			var(--skel-shine) 50%,
+			var(--skel-base) 60%
+		);
+		background-size: 200% 100%;
+		animation:
+			skeleton-fade-in 200ms ease-out both,
+			skeleton-shimmer 1.5s ease-in-out infinite;
+		animation-delay: var(--skeleton-delay, 0ms), var(--skeleton-delay, 0ms);
+	}
+
+	:where(.dark, .dark *) .skeleton-block-shimmer {
+		--skel-base: #334155;
+		--skel-shine: #475569;
+	}
+
+	.skeleton-block-brand {
+		background-color: rgb(29 158 117 / 0.25);
+		animation: skeleton-fade-in 200ms ease-out both;
+		animation-delay: var(--skeleton-delay, 0ms);
+	}
+
+	:where(.dark, .dark *) .skeleton-block-brand {
+		background-color: rgb(29 158 117 / 0.2);
+	}
+
+	.skeleton-surface {
+		animation: skeleton-fade-in 200ms ease-out both;
+	}
+}

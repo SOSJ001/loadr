@@ -64,7 +64,33 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,webmanifest}'],
-				navigateFallback: null
+				navigateFallback: null,
+				// Required in dev when precache manifest is empty (no build output yet).
+				runtimeCaching: [
+					{
+						urlPattern: /\/api\/v1\/.*/i,
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'loadr-api-v1',
+							networkTimeoutSeconds: 10,
+							expiration: {
+								maxEntries: 64,
+								maxAgeSeconds: 60 * 60 * 24
+							}
+						}
+					},
+					{
+						urlPattern: /\/icons\/.*/i,
+						handler: 'CacheFirst',
+						options: {
+							cacheName: 'loadr-icons',
+							expiration: {
+								maxEntries: 32,
+								maxAgeSeconds: 60 * 60 * 24 * 30
+							}
+						}
+					}
+				]
 			},
 			devOptions: {
 				enabled: true,
