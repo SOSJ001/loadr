@@ -11,7 +11,7 @@
 	import DriverJobDetailTopNav from '$lib/components/driver/DriverJobDetailTopNav.svelte';
 	import DriverJobStartedAutoDirectionsCallout from '$lib/components/driver/DriverJobStartedAutoDirectionsCallout.svelte';
 	import type { DriverJobStartedPageData } from '$lib/types/driver-job-started';
-	import { mapsDirectionsUrl } from '$lib/utils/driver-job-detail';
+	import { openMapsDirections } from '$lib/utils/driver-job-detail';
 
 	const AUTO_DIRECTIONS_DELAY_MS = 4000;
 
@@ -60,7 +60,7 @@
 	}
 
 	function openMaps() {
-		window.open(mapsDirectionsUrl(pageData.pickup_address), '_blank', 'noopener,noreferrer');
+		openMapsDirections(pageData.pickup_address);
 	}
 
 	function openDirections() {

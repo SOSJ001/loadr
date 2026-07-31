@@ -48,7 +48,51 @@ export function formatDriverProgressTimestamp(value: string): string {
 }
 
 export function mapsDirectionsUrl(address: string): string {
-	return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+	return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address.trim())}`;
+}
+
+/** Android Chrome/PWA: intent URL opens the Maps app instead of an in-browser tab. */
+export function androidMapsDirectionsIntentUrl(address: string): string {
+	const httpsUrl = mapsDirectionsUrl(address);
+	const destination = encodeURIComponent(address.trim());
+	return `intent://www.google.com/maps/dir/?api=1&destination=${destination}#Intent;scheme=https;package=com.google.android.apps.maps;S.browser_fallback_url=${encodeURIComponent(httpsUrl)};end`;
+}
+
+function isAndroidDevice(): boolean {
+	return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+}
+
+function isIOSDevice(): boolean {
+	return (
+		typeof navigator !== 'undefined' &&
+		/iPhone|iPad|iPod/i.test(navigator.userAgent)
+	);
+}
+
+/** iOS: Apple Maps is preinstalled; opens the native app directly. */
+export function appleMapsDirectionsUrl(address: string): string {
+	return `https://maps.apple.com/?daddr=${encodeURIComponent(address.trim())}&dirflg=d`;
+}
+
+/** Open turn-by-turn directions in the native maps app when possible. */
+export function openMapsDirections(address: string): void {
+	if (typeof window === 'undefined') return;
+
+	const trimmed = address.trim();
+	if (!trimmed) return;
+
+	// window.open(..., '_blank') stays in Chrome on Android; assign/intent delegates to Maps.
+	if (isAndroidDevice()) {
+		window.location.assign(androidMapsDirectionsIntentUrl(trimmed));
+		return;
+	}
+
+	if (isIOSDevice()) {
+		window.location.assign(appleMapsDirectionsUrl(trimmed));
+		return;
+	}
+
+	window.location.assign(mapsDirectionsUrl(trimmed));
 }
 
 export function parseIssueReasonFromNote(note: string | null): string {
