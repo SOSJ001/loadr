@@ -2,31 +2,44 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import ErrorPage from '$lib/components/ui/ErrorPage.svelte';
-	import { isOffline } from '$lib/offline/init';
 	import { getAnyCachedJobsList } from '$lib/offline/page-cache';
+	import { offlineState } from '$lib/stores/offline.svelte';
+	import {
+		isBrowserOffline,
+		isOfflineNavigationError,
+		isNetworkFailure,
+		offlineNavigationMessage,
+		OFFLINE_PAGE_UNAVAILABLE_MESSAGE
+	} from '$lib/utils/error-page';
 
 	let { error, status }: { error: App.Error; status: number } = $props();
 
-	const isOfflineError = $derived(isOffline() || status === 503);
+	let browserOffline = $state(isBrowserOffline());
+
+	const isOfflineError = $derived(
+		browserOffline ||
+			!offlineState.online ||
+			isOfflineNavigationError(error, status) ||
+			isNetworkFailure(error)
+	);
 
 	const offlineMessage = $derived(
 		isOfflineError
-			? (error?.message ??
-				'This page is not available offline. Connect to load it, or open it while online first.')
+			? (offlineNavigationMessage(error, status) ?? OFFLINE_PAGE_UNAVAILABLE_MESSAGE)
 			: null
 	);
 
 	let canGoBack = $state(false);
 
-	onMount(async () => {
-		if (!isOfflineError) return;
-		const list = await getAnyCachedJobsList();
-		canGoBack = list != null;
+	onMount(() => {
+		browserOffline = isBrowserOffline();
+
+		void getAnyCachedJobsList().then((list) => {
+			canGoBack = list != null;
+		});
 	});
 
-	const message = $derived(
-		offlineMessage ?? error?.message ?? 'Something went wrong'
-	);
+	const message = $derived(offlineMessage ?? error?.message ?? 'Something went wrong');
 
 	function goBack() {
 		void goto('/jobs');
@@ -35,8 +48,12 @@
 
 {#if offlineMessage}
 	<div class="flex min-h-full flex-1 flex-col items-center justify-center bg-white px-6 dark:bg-slate-900">
-		<p class="font-inter max-w-sm text-center text-sm text-gray-600 dark:text-slate-300">
+		<p class="font-syne text-xl font-bold text-gray-900 dark:text-slate-100">You're offline</p>
+		<p class="font-inter mt-3 max-w-sm text-center text-sm leading-relaxed text-gray-600 dark:text-slate-300">
 			{message}
+		</p>
+		<p class="font-inter mt-2 max-w-sm text-center text-xs text-gray-500 dark:text-slate-400">
+			Changes you make will sync when your signal returns.
 		</p>
 		{#if canGoBack}
 			<button

@@ -16,10 +16,8 @@ import type { DriverJobDetailPageData } from '$lib/types/driver-job-detail';
 import type { DriverJobStartedPageData } from '$lib/types/driver-job-started';
 import type { DriverJobsPageData } from '$lib/types/driver-jobs';
 import { DRIVER_ISSUE_REASONS } from '$lib/types/driver-job-flow';
+import { OFFLINE_PAGE_UNAVAILABLE_MESSAGE } from '$lib/utils/error-page';
 import { toDateKey } from '$lib/utils/driver-jobs';
-
-const OFFLINE_UNAVAILABLE =
-	'This page is not available offline. Connect to load it, or open it while online first.';
 
 type FetchFn = typeof fetch;
 
@@ -46,7 +44,7 @@ export async function loadDriverJobsPage(
 		const fallback = direct ? null : await getAnyCachedJobsList();
 		const cached = direct ?? fallback;
 		if (!cached) {
-			error(503, OFFLINE_UNAVAILABLE);
+			error(503, OFFLINE_PAGE_UNAVAILABLE_MESSAGE);
 		}
 		return { pageData: cached, fromCache: true };
 	}
@@ -69,7 +67,7 @@ export async function loadDriverJobDetail(
 	if (isOffline()) {
 		const cached = await getCachedJobDetail(jobId);
 		if (!cached) {
-			error(503, OFFLINE_UNAVAILABLE);
+			error(503, OFFLINE_PAGE_UNAVAILABLE_MESSAGE);
 		}
 		return { driverPageData: cached, fromCache: true };
 	}
@@ -113,7 +111,7 @@ export async function loadDriverJobStarted(
 				return { pageData: started, fromCache: true };
 			}
 		}
-		error(503, OFFLINE_UNAVAILABLE);
+		error(503, OFFLINE_PAGE_UNAVAILABLE_MESSAGE);
 	}
 
 	try {
@@ -156,7 +154,7 @@ export async function loadDriverJobFlow(
 			await setCachedJobFlow(jobId, job);
 			return { job, fromCache: true };
 		}
-		error(503, OFFLINE_UNAVAILABLE);
+		error(503, OFFLINE_PAGE_UNAVAILABLE_MESSAGE);
 	}
 
 	const { job } = await fetchJson<{ job: DriverJobFlowContext }>(

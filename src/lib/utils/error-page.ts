@@ -2,7 +2,67 @@
 export const SERVICE_UNAVAILABLE_MESSAGE =
 	'Unable to reach the server. Check your connection and try again.';
 
-export function errorPageTitle(status: number): string {
+export const OFFLINE_PAGE_UNAVAILABLE_MESSAGE =
+	'This page is not available offline. Connect to load it, or open it while online first.';
+
+export function isBrowserOffline(): boolean {
+	return typeof navigator !== 'undefined' && !navigator.onLine;
+}
+
+export function isNetworkFailure(error: unknown): boolean {
+	if (isConnectError(error)) return true;
+
+	if (error instanceof TypeError) {
+		return /failed to fetch|networkerror|load failed/i.test(error.message);
+	}
+
+	if (error instanceof Error) {
+		return /failed to fetch|networkerror|load failed|fetch failed/i.test(error.message);
+	}
+
+	const record = error as { message?: string };
+	return /failed to fetch|networkerror|load failed|fetch failed/i.test(record.message ?? '');
+}
+
+/** True when a navigation/load failure is likely due to being offline or unreachable. */
+export function isOfflineNavigationError(error: unknown, status: number): boolean {
+	if (status === 503) return true;
+	if (isBrowserOffline()) return true;
+	if (isNetworkFailure(error)) return true;
+
+	if (error instanceof Error) {
+		const message = error.message.trim().toLowerCase();
+		if (message.includes('offline') || message.includes('not available offline')) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+export function offlineNavigationMessage(error: unknown, status: number): string | null {
+	if (!isOfflineNavigationError(error, status)) return null;
+
+	if (error instanceof Error) {
+		const message = error.message.trim();
+		if (
+			message &&
+			message !== 'Internal Error' &&
+			(message.includes('offline') || message.includes('not available'))
+		) {
+			return message;
+		}
+	}
+
+	if (isBrowserOffline()) {
+		return OFFLINE_PAGE_UNAVAILABLE_MESSAGE;
+	}
+
+	return SERVICE_UNAVAILABLE_MESSAGE;
+}
+
+export function errorPageTitle(status: number, offline = false): string {
+	if (offline) return "You're offline";
 	if (status === 404) return 'Page not found';
 	if (status === 403) return 'Access denied';
 	if (status === 401) return 'Sign in required';
@@ -81,6 +141,9 @@ export function isInvalidLoginError(error: unknown): boolean {
 }
 
 export function friendlyErrorMessage(error: unknown, status: number, fallback: string): string {
+	const offlineMessage = offlineNavigationMessage(error, status);
+	if (offlineMessage) return offlineMessage;
+
 	if (isConnectError(error)) {
 		return SERVICE_UNAVAILABLE_MESSAGE;
 	}
