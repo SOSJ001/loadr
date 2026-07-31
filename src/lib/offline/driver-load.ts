@@ -39,10 +39,12 @@ export async function loadDriverJobsPage(
 	fromCache: boolean;
 }> {
 	const selectedDate = date ?? toDateKey(new Date());
+	const offline = isOffline();
 
-	if (isOffline()) {
-		const cached =
-			(await getCachedJobsList(selectedDate)) ?? (await getAnyCachedJobsList());
+	if (offline) {
+		const direct = await getCachedJobsList(selectedDate);
+		const fallback = direct ? null : await getAnyCachedJobsList();
+		const cached = direct ?? fallback;
 		if (!cached) {
 			error(503, OFFLINE_UNAVAILABLE);
 		}
@@ -98,11 +100,11 @@ export async function loadDriverJobStarted(
 }> {
 	if (isOffline()) {
 		const cached = await getCachedJobStarted(jobId);
+		const detail = cached ? null : await getCachedJobDetail(jobId);
 		if (cached) {
 			return { pageData: cached, fromCache: true };
 		}
 		// Fall back to optimistic cache from detail if started page not cached yet
-		const detail = await getCachedJobDetail(jobId);
 		if (detail && detail.status === 'in_progress') {
 			const { ensureJobStartedCache } = await import('$lib/offline/optimistic');
 			await ensureJobStartedCache(jobId);
