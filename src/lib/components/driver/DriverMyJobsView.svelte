@@ -20,7 +20,10 @@
 
 	/** Figma 4F — scroll offset to show list with header pinned. */
 	const SCROLLED_PREVIEW_OFFSET_PX = 196;
-	const SCROLL_DELTA_THRESHOLD = 6;
+	const EXPAND_AT_PX = 8;
+	const COLLAPSE_AT_PX = 28;
+	/** Need meaningful list scroll room before collapsing the date/stats header. */
+	const MIN_OVERFLOW_TO_COLLAPSE_PX = 64;
 
 	type Props = {
 		pageData: DriverJobsPageData;
@@ -31,8 +34,9 @@
 
 	let scrollArea = $state<HTMLElement | null>(null);
 	let headerExpanded = $state(true);
-	let lastScrollTop = 0;
 	let reducedMotion = $state(false);
+	let scrollRaf = 0;
+	let lastScrollTop = 0;
 
 	const isEmpty = $derived(
 		!pageData.active_job &&
@@ -79,34 +83,83 @@
 		void goto(`?${params.toString()}`);
 	}
 
-	function handleScroll(event: Event) {
-		const target = event.currentTarget as HTMLElement;
+	function getScrollOverflow(target: HTMLElement): number {
+		return Math.max(0, target.scrollHeight - target.clientHeight);
+	}
+
+	function syncHeaderFromScroll(target: HTMLElement) {
 		const scrollTop = target.scrollTop;
+		const overflow = getScrollOverflow(target);
 		const delta = scrollTop - lastScrollTop;
 
-		if (scrollTop <= 4) {
+		if (overflow < MIN_OVERFLOW_TO_COLLAPSE_PX) {
 			headerExpanded = true;
-		} else if (delta > SCROLL_DELTA_THRESHOLD) {
+			lastScrollTop = scrollTop;
+			return;
+		}
+
+		if (scrollTop <= EXPAND_AT_PX) {
+			headerExpanded = true;
+		} else if (scrollTop >= COLLAPSE_AT_PX && delta > 0) {
 			headerExpanded = false;
-		} else if (delta < -SCROLL_DELTA_THRESHOLD) {
+		} else if (delta < 0 && scrollTop < COLLAPSE_AT_PX + 16) {
 			headerExpanded = true;
 		}
 
 		lastScrollTop = scrollTop;
 	}
 
-	onMount(async () => {
+	function handleScroll(event: Event) {
+		const target = event.currentTarget as HTMLElement;
+		if (scrollRaf) return;
+
+		scrollRaf = requestAnimationFrame(() => {
+			scrollRaf = 0;
+			syncHeaderFromScroll(target);
+		});
+	}
+
+	$effect(() => {
+		const area = scrollArea;
+		if (!area) return;
+
+		syncHeaderFromScroll(area);
+
+		const observer = new ResizeObserver(() => {
+			syncHeaderFromScroll(area);
+		});
+
+		observer.observe(area);
+		return () => observer.disconnect();
+	});
+
+	$effect(() => {
+		pageData.selected_date;
+		pageData.morning_jobs.length;
+		pageData.afternoon_jobs.length;
+		pageData.active_job?.id;
+
+		if (!scrollArea) return;
+		syncHeaderFromScroll(scrollArea);
+	});
+
+	onMount(() => {
 		reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-		if (!showScrolledPreview) return;
+		if (showScrolledPreview) {
+			void tick().then(() => {
+				requestAnimationFrame(() => {
+					if (!scrollArea) return;
+					scrollArea.scrollTop = SCROLLED_PREVIEW_OFFSET_PX;
+					lastScrollTop = SCROLLED_PREVIEW_OFFSET_PX;
+					headerExpanded = false;
+				});
+			});
+		}
 
-		await tick();
-		requestAnimationFrame(() => {
-			if (!scrollArea) return;
-			scrollArea.scrollTop = SCROLLED_PREVIEW_OFFSET_PX;
-			lastScrollTop = SCROLLED_PREVIEW_OFFSET_PX;
-			headerExpanded = false;
-		});
+		return () => {
+			if (scrollRaf) cancelAnimationFrame(scrollRaf);
+		};
 	});
 </script>
 
