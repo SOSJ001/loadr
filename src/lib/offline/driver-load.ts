@@ -4,6 +4,7 @@ import {
 	getCachedJobDetail,
 	getCachedJobFlow,
 	getCachedJobStarted,
+	getAnyCachedJobsList,
 	getCachedJobsList,
 	setCachedJobDetail,
 	setCachedJobFlow,
@@ -20,22 +21,28 @@ import { toDateKey } from '$lib/utils/driver-jobs';
 const OFFLINE_UNAVAILABLE =
 	'This page is not available offline. Connect to load it, or open it while online first.';
 
-async function fetchJson<T>(url: string): Promise<T> {
-	const response = await fetch(url, { credentials: 'same-origin' });
+type FetchFn = typeof fetch;
+
+async function fetchJson<T>(url: string, fetchFn: FetchFn): Promise<T> {
+	const response = await fetchFn(url);
 	if (!response.ok) {
 		throw error(response.status, response.status === 404 ? 'Not found' : 'Failed to load data');
 	}
 	return (await response.json()) as T;
 }
 
-export async function loadDriverJobsPage(date?: string): Promise<{
+export async function loadDriverJobsPage(
+	date: string | undefined,
+	fetchFn: FetchFn
+): Promise<{
 	pageData: DriverJobsPageData;
 	fromCache: boolean;
 }> {
 	const selectedDate = date ?? toDateKey(new Date());
 
 	if (isOffline()) {
-		const cached = await getCachedJobsList(selectedDate);
+		const cached =
+			(await getCachedJobsList(selectedDate)) ?? (await getAnyCachedJobsList());
 		if (!cached) {
 			error(503, OFFLINE_UNAVAILABLE);
 		}
@@ -43,13 +50,17 @@ export async function loadDriverJobsPage(date?: string): Promise<{
 	}
 
 	const { pageData } = await fetchJson<{ pageData: DriverJobsPageData }>(
-		`/api/v1/jobs/driver-page?date=${encodeURIComponent(selectedDate)}`
+		`/api/v1/jobs/driver-page?date=${encodeURIComponent(selectedDate)}`,
+		fetchFn
 	);
 	await setCachedJobsList(selectedDate, pageData);
 	return { pageData, fromCache: false };
 }
 
-export async function loadDriverJobDetail(jobId: string): Promise<{
+export async function loadDriverJobDetail(
+	jobId: string,
+	fetchFn: FetchFn
+): Promise<{
 	driverPageData: DriverJobDetailPageData;
 	fromCache: boolean;
 }> {
@@ -62,7 +73,8 @@ export async function loadDriverJobDetail(jobId: string): Promise<{
 	}
 
 	const { driverPageData } = await fetchJson<{ driverPageData: DriverJobDetailPageData }>(
-		`/api/v1/jobs/${jobId}/driver-detail`
+		`/api/v1/jobs/${jobId}/driver-detail`,
+		fetchFn
 	);
 	await setCachedJobDetail(jobId, driverPageData);
 
@@ -77,7 +89,10 @@ export async function loadDriverJobDetail(jobId: string): Promise<{
 	return { driverPageData, fromCache: false };
 }
 
-export async function loadDriverJobStarted(jobId: string): Promise<{
+export async function loadDriverJobStarted(
+	jobId: string,
+	fetchFn: FetchFn
+): Promise<{
 	pageData: DriverJobStartedPageData;
 	fromCache: boolean;
 }> {
@@ -101,7 +116,8 @@ export async function loadDriverJobStarted(jobId: string): Promise<{
 
 	try {
 		const { pageData } = await fetchJson<{ pageData: DriverJobStartedPageData }>(
-			`/api/v1/jobs/${jobId}/driver-started`
+			`/api/v1/jobs/${jobId}/driver-started`,
+			fetchFn
 		);
 		await setCachedJobStarted(jobId, pageData);
 		return { pageData, fromCache: false };
@@ -115,7 +131,10 @@ export async function loadDriverJobStarted(jobId: string): Promise<{
 	}
 }
 
-export async function loadDriverJobFlow(jobId: string): Promise<{
+export async function loadDriverJobFlow(
+	jobId: string,
+	fetchFn: FetchFn
+): Promise<{
 	job: DriverJobFlowContext;
 	fromCache: boolean;
 }> {
@@ -139,23 +158,30 @@ export async function loadDriverJobFlow(jobId: string): Promise<{
 	}
 
 	const { job } = await fetchJson<{ job: DriverJobFlowContext }>(
-		`/api/v1/jobs/${jobId}/driver-flow`
+		`/api/v1/jobs/${jobId}/driver-flow`,
+		fetchFn
 	);
 	await setCachedJobFlow(jobId, job);
 	return { job, fromCache: false };
 }
 
-export async function loadDriverReportIssueSuccess(jobId: string): Promise<{
+export async function loadDriverReportIssueSuccess(
+	jobId: string,
+	fetchFn: FetchFn
+): Promise<{
 	job: DriverJobFlowContext;
 	fromCache: boolean;
 }> {
-	return loadDriverJobFlow(jobId);
+	return loadDriverJobFlow(jobId, fetchFn);
 }
 
 export const driverReportIssueReasons = DRIVER_ISSUE_REASONS;
 
 /** Prefetch job details for visible list jobs (best-effort, online only). */
-export async function prefetchJobDetailsForList(pageData: DriverJobsPageData): Promise<void> {
+export async function prefetchJobDetailsForList(
+	pageData: DriverJobsPageData,
+	fetchFn: FetchFn
+): Promise<void> {
 	if (isOffline()) return;
 
 	const jobs = [...pageData.morning_jobs, ...pageData.afternoon_jobs];
@@ -163,7 +189,7 @@ export async function prefetchJobDetailsForList(pageData: DriverJobsPageData): P
 		jobs.map(async (job) => {
 			const existing = await getCachedJobDetail(job.id);
 			if (existing) return;
-			await loadDriverJobDetail(job.id);
+			await loadDriverJobDetail(job.id, fetchFn);
 		})
 	);
 }

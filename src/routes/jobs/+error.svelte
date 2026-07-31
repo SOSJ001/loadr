@@ -7,16 +7,19 @@
 
 	let { error, status }: { error: App.Error; status: number } = $props();
 
-	let offlineMessage = $state<string | null>(null);
+	const isOfflineError = $derived(isOffline() || status === 503);
+
+	const offlineMessage = $derived(
+		isOfflineError
+			? (error?.message ??
+				'This page is not available offline. Connect to load it, or open it while online first.')
+			: null
+	);
+
 	let canGoBack = $state(false);
 
 	onMount(async () => {
-		if (!isOffline() && status !== 503) return;
-
-		offlineMessage =
-			error?.message ??
-			'This page is not available offline. Connect to load it, or open it while online first.';
-
+		if (!isOfflineError) return;
 		const list = await getAnyCachedJobsList();
 		canGoBack = list != null;
 	});
