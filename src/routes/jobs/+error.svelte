@@ -7,7 +7,6 @@
 	import {
 		isBrowserOffline,
 		isOfflineNavigationError,
-		isNetworkFailure,
 		offlineNavigationMessage,
 		OFFLINE_PAGE_UNAVAILABLE_MESSAGE
 	} from '$lib/utils/error-page';
@@ -17,10 +16,9 @@
 	let browserOffline = $state(isBrowserOffline());
 
 	const isOfflineError = $derived(
-		browserOffline ||
-			!offlineState.online ||
-			isOfflineNavigationError(error, status) ||
-			isNetworkFailure(error)
+		!offlineState.online ||
+			browserOffline ||
+			isOfflineNavigationError(error, status)
 	);
 
 	const offlineMessage = $derived(
@@ -39,18 +37,16 @@
 		});
 	});
 
-	const message = $derived(offlineMessage ?? error?.message ?? 'Something went wrong');
-
 	function goBack() {
-		void goto('/jobs');
+		void goto('/jobs', { invalidateAll: false });
 	}
 </script>
 
-{#if offlineMessage}
+{#if isOfflineError}
 	<div class="flex min-h-full flex-1 flex-col items-center justify-center bg-white px-6 dark:bg-slate-900">
 		<p class="font-syne text-xl font-bold text-gray-900 dark:text-slate-100">You're offline</p>
 		<p class="font-inter mt-3 max-w-sm text-center text-sm leading-relaxed text-gray-600 dark:text-slate-300">
-			{message}
+			{offlineMessage}
 		</p>
 		<p class="font-inter mt-2 max-w-sm text-center text-xs text-gray-500 dark:text-slate-400">
 			Changes you make will sync when your signal returns.
@@ -66,5 +62,5 @@
 		{/if}
 	</div>
 {:else}
-	<ErrorPage {status} {message} homeHref="/jobs" />
+	<ErrorPage {status} message={error?.message ?? 'Something went wrong'} homeHref="/jobs" />
 {/if}

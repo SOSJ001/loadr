@@ -68,6 +68,24 @@ export default defineConfig({
 				// Required in dev when precache manifest is empty (no build output yet).
 				runtimeCaching: [
 					{
+						urlPattern: ({ url, request }) => {
+							if (request.method !== 'GET') return false;
+							const path = url.pathname;
+							if (path !== '/jobs' && !path.startsWith('/jobs/')) return false;
+							if (path.includes('__data.json')) return true;
+							return request.headers.get('x-sveltekit-data') === 'true';
+						},
+						handler: 'NetworkFirst',
+						options: {
+							cacheName: 'loadr-jobs-sk-data',
+							networkTimeoutSeconds: 4,
+							expiration: {
+								maxEntries: 48,
+								maxAgeSeconds: 60 * 60 * 24 * 7
+							}
+						}
+					},
+					{
 						urlPattern: /\/api\/v1\/.*/i,
 						handler: 'NetworkFirst',
 						options: {
