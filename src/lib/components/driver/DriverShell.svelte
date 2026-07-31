@@ -15,7 +15,8 @@
 
 <div class="mx-auto flex h-dvh w-full max-w-[390px] flex-col overflow-hidden bg-white dark:bg-slate-900">
 	<main
-		class="flex min-h-0 flex-1 flex-col overflow-hidden {hideTabBar ? 'pb-0' : 'pb-[83px]'}"
+		data-driver-shell
+		class="relative flex min-h-0 flex-1 flex-col overflow-hidden {hideTabBar ? 'pb-0' : 'pb-[83px]'}"
 	>
 		{@render children()}
 	</main>

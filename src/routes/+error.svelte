@@ -32,7 +32,9 @@
 </script>
 
 {#if showOfflineUi}
-	<DriverOfflineErrorView {message} />
+	<div class="flex h-dvh w-full flex-col overflow-hidden bg-white dark:bg-slate-900">
+		<DriverOfflineErrorView {message} />
+	</div>
 {:else}
 	<ErrorPage {status} {message} {homeHref} />
 {/if}
