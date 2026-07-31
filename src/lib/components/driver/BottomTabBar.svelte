@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { CircleHelp, Briefcase, User, LogOut } from '@lucide/svelte';
 	import { logout } from '$lib/auth/logout';
+	import { isDriverConnectivityOffline } from '$lib/offline/connectivity';
 	import { isDriverJobsPreviewMode } from '$lib/utils/driver-jobs-theme';
 
 	type Tab = 'jobs' | 'profile' | 'help';
@@ -35,6 +36,18 @@
 
 	let loggingOut = $state(false);
 
+	function handleJobsTabClick(event: MouseEvent) {
+		if (!isDriverConnectivityOffline()) return;
+		if (currentTab === 'jobs') {
+			event.preventDefault();
+			return;
+		}
+		if (window.history.length > 1 && pathname.startsWith('/jobs/')) {
+			event.preventDefault();
+			history.back();
+		}
+	}
+
 	async function handleLogout() {
 		if (loggingOut) return;
 		loggingOut = true;
@@ -62,6 +75,7 @@
 				href={tab.href}
 				class="flex min-w-0 flex-1 flex-col items-center gap-0.5"
 				aria-current={isActive ? 'page' : undefined}
+				onclick={tab.id === 'jobs' ? handleJobsTabClick : undefined}
 			>
 				{#if isActive}
 					<span class="size-1 rounded-sm bg-brand" aria-hidden="true"></span>

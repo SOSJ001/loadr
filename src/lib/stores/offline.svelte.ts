@@ -1,3 +1,5 @@
+import { persistOfflineStatus } from '$lib/offline/connectivity';
+
 export type PendingSyncJob = {
 	jobId: string;
 	type: 'start_job' | 'complete_job' | 'report_issue';
@@ -14,6 +16,7 @@ export const offlineState = $state({
 
 export function setOnlineStatus(online: boolean) {
 	offlineState.online = online;
+	persistOfflineStatus(online);
 	if (!online) {
 		offlineState.syncSuccess = false;
 	}

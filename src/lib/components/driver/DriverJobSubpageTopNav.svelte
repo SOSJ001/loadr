@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChevronLeft } from '@lucide/svelte';
+	import { handleDriverBackClick } from '$lib/utils/driver-navigation';
 
 	type Props = {
 		title: string;
@@ -7,6 +8,10 @@
 	};
 
 	let { title, backHref }: Props = $props();
+
+	function onBackClick(event: MouseEvent) {
+		handleDriverBackClick(event, backHref);
+	}
 </script>
 
 <header class="flex h-[52px] shrink-0 items-center justify-between px-5">
@@ -14,6 +19,7 @@
 		href={backHref}
 		class="flex size-11 shrink-0 items-center justify-center rounded-lg text-gray-900 transition-colors hover:bg-gray-100 dark:text-slate-100 dark:hover:bg-slate-800"
 		aria-label="Go back"
+		onclick={onBackClick}
 	>
 		<ChevronLeft size={20} stroke-width={1.75} aria-hidden="true" />
 	</a>

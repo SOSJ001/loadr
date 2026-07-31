@@ -238,10 +238,7 @@ export function ensureInstallPrompt(timeoutMs = 12_000): Promise<boolean> {
 				resolve(success);
 			};
 
-			const timeout = window.setTimeout(
-				() => finish(refreshInstallPromptState()),
-				timeoutMs
-			);
+			const timeout = window.setTimeout(() => finish(refreshInstallPromptState()), timeoutMs);
 
 			const onReady = () => {
 				if (refreshInstallPromptState()) finish(true);

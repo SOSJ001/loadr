@@ -1,13 +1,17 @@
 /** User-facing copy for +error.svelte and handleError. */
+import {
+	isBrowserOffline,
+	isDriverConnectivityOffline,
+	readPersistedOffline
+} from '$lib/offline/connectivity';
+
 export const SERVICE_UNAVAILABLE_MESSAGE =
 	'Unable to reach the server. Check your connection and try again.';
 
 export const OFFLINE_PAGE_UNAVAILABLE_MESSAGE =
 	'This page is not available offline. Connect to load it, or open it while online first.';
 
-export function isBrowserOffline(): boolean {
-	return typeof navigator !== 'undefined' && !navigator.onLine;
-}
+export { isBrowserOffline, isDriverConnectivityOffline, readPersistedOffline };
 
 export function isNetworkFailure(error: unknown): boolean {
 	if (isConnectError(error)) return true;
@@ -24,26 +28,18 @@ export function isNetworkFailure(error: unknown): boolean {
 	return /failed to fetch|networkerror|load failed|fetch failed/i.test(record.message ?? '');
 }
 
-export function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	if (error && typeof error === 'object' && 'message' in error) {
-		return String((error as { message?: unknown }).message ?? '');
-	}
-	return '';
-}
-
 /** True when a navigation/load failure is likely due to being offline or unreachable. */
 export function isOfflineNavigationError(error: unknown, status: number): boolean {
 	if (status === 503) return true;
-	if (isBrowserOffline()) return true;
+	if (isDriverConnectivityOffline()) return true;
 	if (isNetworkFailure(error)) return true;
 
-	const message = getErrorMessage(error).trim().toLowerCase();
-	if (!message) return false;
-
-	if (message.includes('offline') || message.includes('not available')) return true;
-	if (message.includes('unable to reach the server')) return true;
-	if (message.includes('check your connection')) return true;
+	if (error instanceof Error) {
+		const message = error.message.trim().toLowerCase();
+		if (message.includes('offline') || message.includes('not available offline')) {
+			return true;
+		}
+	}
 
 	return false;
 }
@@ -51,18 +47,18 @@ export function isOfflineNavigationError(error: unknown, status: number): boolea
 export function offlineNavigationMessage(error: unknown, status: number): string | null {
 	if (!isOfflineNavigationError(error, status)) return null;
 
-	const message = getErrorMessage(error).trim();
-	if (
-		message &&
-		message !== 'Internal Error' &&
-		(message.includes('offline') ||
-			message.includes('not available') ||
-			message.includes('connection'))
-	) {
-		return message;
+	if (error instanceof Error) {
+		const message = error.message.trim();
+		if (
+			message &&
+			message !== 'Internal Error' &&
+			(message.includes('offline') || message.includes('not available'))
+		) {
+			return message;
+		}
 	}
 
-	if (isBrowserOffline()) {
+	if (isDriverConnectivityOffline()) {
 		return OFFLINE_PAGE_UNAVAILABLE_MESSAGE;
 	}
 

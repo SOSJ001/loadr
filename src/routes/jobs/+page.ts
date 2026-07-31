@@ -1,7 +1,4 @@
-import {
-	loadDriverJobsPage,
-	prefetchJobDetailsForList
-} from '$lib/offline/driver-load';
+import { loadDriverJobsPage, prefetchJobDetailsForList } from '$lib/offline/driver-load';
 import { browser } from '$app/environment';
 import type { PageLoad } from './$types';
 

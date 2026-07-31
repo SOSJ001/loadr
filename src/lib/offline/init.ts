@@ -1,5 +1,6 @@
 import { flushOfflineQueue } from '$lib/offline/sync';
 import { refreshPendingCount } from '$lib/offline/queue';
+import { isBrowserOffline, isDriverConnectivityOffline } from '$lib/offline/connectivity';
 import { setOnlineStatus } from '$lib/stores/offline.svelte';
 
 let initialized = false;
@@ -31,5 +32,7 @@ export function initOfflineSync(): () => void {
 }
 
 export function isOffline(): boolean {
-	return typeof navigator !== 'undefined' && !navigator.onLine;
+	return isDriverConnectivityOffline();
 }
+
+export { isBrowserOffline, isDriverConnectivityOffline };
