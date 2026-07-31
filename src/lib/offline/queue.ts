@@ -1,4 +1,9 @@
 import { deleteQueueItem, putQueueItem, readAllQueueItems } from '$lib/offline/db';
+import {
+	applyOptimisticCompleteJob,
+	applyOptimisticReportIssue,
+	applyOptimisticStartJob
+} from '$lib/offline/optimistic';
 import type { OfflineQueueItem } from '$lib/offline/types';
 import { setPendingSyncCount, setPendingSyncJobs } from '$lib/stores/offline.svelte';
 
@@ -25,6 +30,7 @@ export async function queueStartJob(jobId: string): Promise<void> {
 		createdAt: new Date().toISOString()
 	};
 	await putQueueItem(item);
+	await applyOptimisticStartJob(jobId);
 	await refreshPendingState();
 }
 
@@ -44,6 +50,7 @@ export async function queueCompleteJob(
 		photoType: photo.type || 'image/jpeg'
 	};
 	await putQueueItem(item);
+	await applyOptimisticCompleteJob(jobId);
 	await refreshPendingState();
 }
 
@@ -69,6 +76,7 @@ export async function queueReportIssue(
 		photoType: fields.photo?.type || undefined
 	};
 	await putQueueItem(item);
+	await applyOptimisticReportIssue(jobId, fields.reason);
 	await refreshPendingState();
 }
 

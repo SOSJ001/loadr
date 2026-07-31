@@ -1,7 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import {
-	requireInProgressJobForDriver,
-	toDriverJobFlowContext
+	requireInProgressJobForDriver
 } from '$lib/server/driver-job-flow';
 import { requireDriverPage } from '$lib/server/auth';
 import { isJobsError } from '$lib/server/jobs';
@@ -11,14 +10,8 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals, params }) => {
 	requireDriverPage(locals.profile);
 
-	const job = await requireInProgressJobForDriver(
-		locals.supabase,
-		locals.profile!,
-		params.id
-	);
-
 	return {
-		job: toDriverJobFlowContext(job)
+		driverClientLoad: true as const
 	};
 };
 

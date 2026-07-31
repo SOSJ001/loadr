@@ -2,7 +2,6 @@ import { fail, redirect } from '@sveltejs/kit';
 import { mockDriverReportIssueJob } from '$lib/data/mock-driver-report-issue';
 import { requireDriverPage } from '$lib/server/auth';
 import {
-	fetchDriverReportIssuePageData,
 	submitDriverReportIssue
 } from '$lib/server/driver-report-issue';
 import { isJobsError } from '$lib/server/jobs';
@@ -36,19 +35,13 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 
 	requireDriverPage(locals.profile);
 
-	const job = await fetchDriverReportIssuePageData(
-		locals.supabase,
-		locals.profile!,
-		params.id
-	);
-
 	return {
 		preview: false,
-		job,
 		reasons: DRIVER_ISSUE_REASONS,
 		initialSelectedReason: '',
 		initialNotes: '',
-		initialPhotoAttached: false
+		initialPhotoAttached: false,
+		driverClientLoad: true as const
 	};
 };
 

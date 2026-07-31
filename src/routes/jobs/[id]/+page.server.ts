@@ -6,7 +6,6 @@ import {
 } from '$lib/data/mock-operator-job-detail';
 import { mockDriverJobDetailAttempted, mockDriverJobDetailComplete, mockDriverJobDetailInProgress, mockDriverJobDetailPending } from '$lib/data/mock-driver-job-detail';
 import { requireDriverPage, requireJobsAccess } from '$lib/server/auth';
-import { fetchDriverJobDetailPageData } from '$lib/server/driver-job-detail';
 import { isJobsError, startJobForDriver } from '$lib/server/jobs';
 import { fetchOperatorJobDetailPageData } from '$lib/server/operator-job-detail';
 import { isDriverJobDetailPreviewMode } from '$lib/utils/driver-job-detail-theme';
@@ -73,17 +72,11 @@ export const load: PageServerLoad = async ({ locals, params, url, parent }) => {
 		};
 	}
 
-	const driverPageData = await fetchDriverJobDetailPageData(
-		locals.supabase,
+	return {
 		profile,
-		params.id
-	);
-
-	if (!driverPageData) {
-		error(404, 'Not found');
-	}
-
-	return { profile, preview: false, driverPageData };
+		preview: false,
+		driverClientLoad: true as const
+	};
 };
 
 export const actions: Actions = {

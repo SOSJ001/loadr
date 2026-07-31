@@ -4,12 +4,9 @@ import {
 	getMockOperatorJobsPopulated
 } from '$lib/data/mock-operator-jobs';
 import { buildOperatorJobsPageData } from '$lib/server/operator-jobs';
-import { listJobsForUser } from '$lib/server/jobs';
-import { fetchVehicleLabelsByIds } from '$lib/server/driver-job-detail';
 import type { UserProfile } from '$lib/types/user';
 import { mockDriverJobsPageDataForPreview } from '$lib/utils/driver-jobs-mock';
 import { isDriverJobsPreviewMode } from '$lib/utils/driver-jobs-theme';
-import { buildDriverJobsPageData, toDateKey } from '$lib/utils/driver-jobs';
 import type { PageServerLoad } from './$types';
 
 const PREVIEW_DRIVER_PROFILE: UserProfile = {
@@ -72,17 +69,11 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		};
 	}
 
-	const jobs = await listJobsForUser(locals.supabase, profile);
-	const selectedDate = url.searchParams.get('date') ?? toDateKey(new Date());
-	const vehicleLabelsById = await fetchVehicleLabelsByIds(
-		locals.supabase,
-		jobs.map((job) => job.assigned_vehicle_id).filter((id): id is string => Boolean(id))
-	);
-
+	// Driver live data loads client-side (+page.ts) for offline cache support.
 	return {
-		jobs,
+		jobs: [],
 		profile,
 		preview: false,
-		pageData: buildDriverJobsPageData(jobs, profile.full_name, selectedDate, vehicleLabelsById)
+		driverClientLoad: true as const
 	};
 };

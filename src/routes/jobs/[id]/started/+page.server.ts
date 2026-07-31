@@ -3,8 +3,6 @@ import {
 	mockDriverJobStartedPageData
 } from '$lib/data/mock-driver-job-started';
 import { requireDriverPage } from '$lib/server/auth';
-import { requireInProgressJobForDriver } from '$lib/server/driver-job-flow';
-import { buildDriverJobStartedPageDataForJob } from '$lib/server/driver-job-started';
 import {
 	isDriverJobStartedFragilePreview,
 	isDriverJobStartedPreviewMode
@@ -27,17 +25,9 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 
 	requireDriverPage(locals.profile);
 
-	const job = await requireInProgressJobForDriver(
-		locals.supabase,
-		locals.profile!,
-		params.id
-	);
-
-	const pageData = await buildDriverJobStartedPageDataForJob(locals.supabase, job);
-
 	return {
 		preview: false,
 		freshStart,
-		pageData
+		driverClientLoad: true as const
 	};
 };

@@ -1,6 +1,7 @@
 const DB_NAME = 'loadr-offline';
-const STORE = 'action-queue';
-const DB_VERSION = 1;
+const QUEUE_STORE = 'action-queue';
+const PAGE_CACHE_STORE = 'page-cache';
+const DB_VERSION = 2;
 
 function openDb(): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
@@ -8,8 +9,11 @@ function openDb(): Promise<IDBDatabase> {
 
 		request.onupgradeneeded = () => {
 			const db = request.result;
-			if (!db.objectStoreNames.contains(STORE)) {
-				db.createObjectStore(STORE, { keyPath: 'id' });
+			if (!db.objectStoreNames.contains(QUEUE_STORE)) {
+				db.createObjectStore(QUEUE_STORE, { keyPath: 'id' });
+			}
+			if (!db.objectStoreNames.contains(PAGE_CACHE_STORE)) {
+				db.createObjectStore(PAGE_CACHE_STORE);
 			}
 		};
 
@@ -30,7 +34,9 @@ export async function readAllQueueItems<T>(): Promise<T[]> {
 
 	const db = await openDb();
 	try {
-		return await idbRequest<T[]>(db.transaction(STORE, 'readonly').objectStore(STORE).getAll());
+		return await idbRequest<T[]>(
+			db.transaction(QUEUE_STORE, 'readonly').objectStore(QUEUE_STORE).getAll()
+		);
 	} finally {
 		db.close();
 	}
@@ -39,7 +45,9 @@ export async function readAllQueueItems<T>(): Promise<T[]> {
 export async function putQueueItem<T extends { id: string }>(item: T): Promise<void> {
 	const db = await openDb();
 	try {
-		await idbRequest(db.transaction(STORE, 'readwrite').objectStore(STORE).put(item));
+		await idbRequest(
+			db.transaction(QUEUE_STORE, 'readwrite').objectStore(QUEUE_STORE).put(item)
+		);
 	} finally {
 		db.close();
 	}
@@ -48,8 +56,59 @@ export async function putQueueItem<T extends { id: string }>(item: T): Promise<v
 export async function deleteQueueItem(id: string): Promise<void> {
 	const db = await openDb();
 	try {
-		await idbRequest(db.transaction(STORE, 'readwrite').objectStore(STORE).delete(id));
+		await idbRequest(
+			db.transaction(QUEUE_STORE, 'readwrite').objectStore(QUEUE_STORE).delete(id)
+		);
 	} finally {
 		db.close();
 	}
 }
+
+export async function getPageCacheItem<T>(key: string): Promise<T | null> {
+	if (typeof indexedDB === 'undefined') return null;
+
+	const db = await openDb();
+	try {
+		const value = await idbRequest<T | undefined>(
+			db.transaction(PAGE_CACHE_STORE, 'readonly').objectStore(PAGE_CACHE_STORE).get(key)
+		);
+		return value ?? null;
+	} catch {
+		return null;
+	} finally {
+		db.close();
+	}
+}
+
+export async function setPageCacheItem<T>(key: string, value: T): Promise<void> {
+	if (typeof indexedDB === 'undefined') return;
+
+	const db = await openDb();
+	try {
+		await idbRequest(
+			db.transaction(PAGE_CACHE_STORE, 'readwrite').objectStore(PAGE_CACHE_STORE).put(value, key)
+		);
+	} finally {
+		db.close();
+	}
+}
+
+export async function deletePageCacheItem(key: string): Promise<void> {
+	if (typeof indexedDB === 'undefined') return;
+
+	const db = await openDb();
+	try {
+		await idbRequest(
+			db.transaction(PAGE_CACHE_STORE, 'readwrite').objectStore(PAGE_CACHE_STORE).delete(key)
+		);
+	} finally {
+		db.close();
+	}
+}
+
+export const pageCacheKeys = {
+	jobsList: (date: string) => `jobs-list:${date}`,
+	jobDetail: (jobId: string) => `job-detail:${jobId}`,
+	jobFlow: (jobId: string) => `job-flow:${jobId}`,
+	jobStarted: (jobId: string) => `job-started:${jobId}`
+} as const;
