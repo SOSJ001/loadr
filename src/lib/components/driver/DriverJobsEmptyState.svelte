@@ -2,7 +2,7 @@
 	import { Gem } from '@lucide/svelte';
 </script>
 
-<div class="flex min-h-full flex-1 flex-col items-center justify-center gap-2.5 px-5">
+<div class="flex flex-1 flex-col items-center justify-center gap-2.5 px-5">
 	<Gem
 		size={52}
 		stroke-width={1.25}

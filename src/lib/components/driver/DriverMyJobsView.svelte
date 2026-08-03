@@ -197,9 +197,7 @@
 
 	<div
 		bind:this={scrollArea}
-		class="min-h-0 flex-1 overscroll-y-contain [-webkit-overflow-scrolling:touch] {isEmpty
-			? 'flex flex-col overflow-hidden'
-			: 'overflow-y-auto'}"
+		class="min-h-0 flex-1 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]"
 		onscroll={handleScroll}
 	>
 		{#if isEmpty}

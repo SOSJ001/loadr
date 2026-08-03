@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { ExternalLink, MapPin, Navigation } from '@lucide/svelte';
-	import { openMapsDirections } from '$lib/utils/driver-job-detail';
+	import { mapsDirectionsUrl } from '$lib/utils/driver-job-detail';
 
 	type Props = {
 		pickupAddress: string;
@@ -11,7 +11,7 @@
 	let { pickupAddress, dropoffAddress, directionsAddress }: Props = $props();
 
 	function openDirections() {
-		openMapsDirections(directionsAddress);
+		window.open(mapsDirectionsUrl(directionsAddress), '_blank', 'noopener,noreferrer');
 	}
 </script>
 
