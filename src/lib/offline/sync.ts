@@ -29,6 +29,7 @@ async function replayItem(item: OfflineQueueItem): Promise<void> {
 		}
 		case 'complete_job': {
 			const formData = new FormData();
+			formData.append('type', 'photo');
 			formData.append(
 				'photo',
 				new File([item.photo], item.photoName, { type: item.photoType })

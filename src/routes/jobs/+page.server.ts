@@ -1,9 +1,4 @@
 import { requireJobsAccess } from '$lib/server/auth';
-import {
-	getMockOperatorJobsEmpty,
-	getMockOperatorJobsPopulated
-} from '$lib/data/mock-operator-jobs';
-import { buildOperatorJobsPageData } from '$lib/server/operator-jobs';
 import type { UserProfile } from '$lib/types/user';
 import { mockDriverJobsPageDataForPreview } from '$lib/utils/driver-jobs-mock';
 import { isDriverJobsPreviewMode } from '$lib/utils/driver-jobs-theme';
@@ -20,14 +15,6 @@ const PREVIEW_DRIVER_PROFILE: UserProfile = {
 	removed_at: null
 };
 
-function isOperatorJobsPreviewEmpty(preview: string | null): boolean {
-	return preview === 'empty';
-}
-
-function isOperatorJobsPreviewPopulated(preview: string | null): boolean {
-	return preview === 'populated' || preview === 'dark';
-}
-
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const preview = url.searchParams.get('preview');
 
@@ -43,29 +30,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const profile = requireJobsAccess(locals.profile);
 
 	if (profile.role === 'admin') {
-		if (isOperatorJobsPreviewPopulated(preview)) {
-			return {
-				profile,
-				preview: true,
-				pageData: getMockOperatorJobsPopulated()
-			};
-		}
-
-		if (isOperatorJobsPreviewEmpty(preview)) {
-			return {
-				profile,
-				preview: true,
-				pageData: getMockOperatorJobsEmpty()
-			};
-		}
-
-		// Live operator jobs list from Supabase
-		const pageData = await buildOperatorJobsPageData(locals.supabase, profile);
-
+		// Operator jobs data loads in +page.ts (universal) — page.server fields were not reaching page.data
 		return {
 			profile,
-			preview: false,
-			pageData
+			preview: false
 		};
 	}
 

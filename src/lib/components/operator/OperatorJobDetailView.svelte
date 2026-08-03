@@ -56,7 +56,7 @@
 		</div>
 
 		<div class="flex flex-col gap-4">
-			<JobDetailPodCard pod={pageData.pod} />
+			<JobDetailPodCard jobId={pageData.id} pod={pageData.pod} />
 			<JobDetailCostCard cost={pageData.cost} />
 		</div>
 	</div>

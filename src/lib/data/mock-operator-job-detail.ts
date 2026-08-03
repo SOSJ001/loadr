@@ -56,8 +56,11 @@ function getMockOperatorJobDetailComplete(
 		],
 		pod: {
 			status: 'submitted',
+			type: 'photo',
 			completed_by: 'James Okafor',
 			timestamp: '2026-06-09T11:42:00.000Z',
+			blockchain_status: 'confirmed',
+			blockchain_hash: 'a3f9c72b8e1d4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9',
 			blockchain_ref: 'a3f9...c72b'
 		},
 		cost: { ...SHARED_JOB_COST },
@@ -158,7 +161,7 @@ function referenceFromMockId(jobId: string): string {
 	return `#${num.padStart(4, '0')}`;
 }
 
-export type OperatorJobDetailVariant = 'complete' | 'attempted' | 'in_progress';
+export type OperatorJobDetailVariant = 'complete' | 'attempted' | 'in_progress' | 'pod_pending';
 
 export function getMockOperatorJobDetail(
 	jobId = 'mock-0042',
@@ -174,6 +177,22 @@ export function getMockOperatorJobDetail(
 		return getMockOperatorJobDetailInProgress(jobId, reference);
 	}
 
+	if (variant === 'pod_pending') {
+		const complete = getMockOperatorJobDetailComplete(jobId, reference);
+		return {
+			...complete,
+			pod: {
+				status: 'submitted',
+				type: 'photo',
+				completed_by: 'James Okafor',
+				timestamp: '2026-06-09T11:42:00.000Z',
+				blockchain_status: 'pending',
+				blockchain_hash: null,
+				blockchain_ref: 'Pending'
+			}
+		};
+	}
+
 	return getMockOperatorJobDetailComplete(jobId, reference);
 }
 
@@ -181,6 +200,7 @@ export function resolveMockOperatorJobDetailVariant(
 	jobId: string,
 	preview: string | null
 ): OperatorJobDetailVariant {
+	if (preview === 'pod-pending' || preview === 'pod_pending') return 'pod_pending';
 	if (preview === 'attempted') return 'attempted';
 	if (preview === 'in_progress') return 'in_progress';
 	if (isMockJobAttempted(jobId)) return 'attempted';

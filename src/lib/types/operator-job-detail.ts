@@ -17,8 +17,11 @@ export type OperatorJobPodAwaiting = { status: 'awaiting' };
 
 export type OperatorJobPodSubmitted = {
 	status: 'submitted';
+	type: 'photo' | 'signature';
 	completed_by: string;
 	timestamp: string;
+	blockchain_status: 'pending' | 'confirmed';
+	blockchain_hash: string | null;
 	blockchain_ref: string;
 };
 

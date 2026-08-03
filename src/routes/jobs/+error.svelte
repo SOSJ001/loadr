@@ -13,7 +13,7 @@
 
 	const showOfflineUi = $derived(
 		isDriverConnectivityOffline() ||
-			isOfflineNavigationError(error, status) ||
+			(error != null && isOfflineNavigationError(error, status)) ||
 			isNetworkFailure(error)
 	);
 

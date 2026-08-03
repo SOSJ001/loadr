@@ -1,4 +1,5 @@
 {
+	"crons": [{ "path": "/api/cron/blockchain", "schedule": "*/5 * * * *" }],
 	"headers": [
 		{
 			"source": "/sw.js",

@@ -9,6 +9,7 @@ import type {
 } from '$lib/types/operator-job-detail';
 import type { UserProfile } from '$lib/types/user';
 import { getJobForUser } from '$lib/server/jobs';
+import { getPodForJob, type PodForJob } from '$lib/server/pod';
 
 type AppSupabase = SupabaseClient<Database>;
 type JobRow = Database['public']['Tables']['jobs']['Row'];
@@ -22,9 +23,36 @@ function formatDriverStatus(status: string | null | undefined) {
 	return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-function buildBlockchainRef(jobId: string) {
-	const compact = jobId.replace(/-/g, '');
-	return `${compact.slice(0, 4)}...${compact.slice(-4)}`;
+function formatBlockchainRef(pod: PodForJob): string {
+	if (pod.blockchain_confirmed && pod.blockchain_hash) {
+		const hash = pod.blockchain_hash;
+		if (hash.length <= 12) return hash;
+		return `${hash.slice(0, 6)}...${hash.slice(-4)}`;
+	}
+
+	const txId = pod.blockchain_receipt?.solana_transaction_id;
+	if (txId) {
+		if (txId.length <= 12) return txId;
+		return `${txId.slice(0, 4)}...${txId.slice(-4)}`;
+	}
+
+	return 'Pending';
+}
+
+function buildPod(pod: PodForJob | null, driverName: string): OperatorJobPod {
+	if (!pod) {
+		return { status: 'awaiting' };
+	}
+
+	return {
+		status: 'submitted',
+		type: pod.type,
+		completed_by: driverName,
+		timestamp: pod.completed_at,
+		blockchain_status: pod.blockchain_confirmed ? 'confirmed' : 'pending',
+		blockchain_hash: pod.blockchain_confirmed ? pod.blockchain_hash : null,
+		blockchain_ref: formatBlockchainRef(pod)
+	};
 }
 
 function buildTimeline(job: JobRow, attemptedNote: string | null): OperatorJobTimelineEvent[] {
@@ -100,19 +128,6 @@ function buildTimeline(job: JobRow, attemptedNote: string | null): OperatorJobTi
 	return events;
 }
 
-function buildPod(job: JobRow, driverName: string): OperatorJobPod {
-	if (job.status === 'complete' && job.completed_at) {
-		return {
-			status: 'submitted',
-			completed_by: driverName,
-			timestamp: job.completed_at,
-			blockchain_ref: buildBlockchainRef(job.id)
-		};
-	}
-
-	return { status: 'awaiting' };
-}
-
 function buildCost(job: JobRow): OperatorJobCostData | null {
 	const fuelCost = job.fuel_cost;
 	const jobValue = job.job_value;
@@ -181,7 +196,8 @@ async function getAttemptedNote(
 export function buildOperatorJobDetailPageData(
 	job: JobRow,
 	driver: { name: string; status: string },
-	attemptedNote: string | null
+	attemptedNote: string | null,
+	pod: PodForJob | null
 ): OperatorJobDetailPageData {
 	return {
 		id: job.id,
@@ -195,7 +211,7 @@ export function buildOperatorJobDetailPageData(
 		driver_status: driver.status,
 		notes: job.notes?.trim() || '—',
 		timeline: buildTimeline(job, attemptedNote),
-		pod: buildPod(job, driver.name),
+		pod: buildPod(pod, driver.name),
 		cost: buildCost(job),
 		invoice_enabled: true
 	};
@@ -211,13 +227,14 @@ export async function fetchOperatorJobDetailPageData(
 	const job = await getJobForUser(supabase, profile, jobId);
 	if (!job) return null;
 
-	const [driver, attemptedNote] = await Promise.all([
+	const [driver, attemptedNote, pod] = await Promise.all([
 		resolveDriverInfo(supabase, profile.company_id, job.assigned_driver_id),
 		job.status === 'attempted'
 			? getAttemptedNote(supabase, profile.company_id, job.id)
-			: Promise.resolve(null)
+			: Promise.resolve(null),
+		getPodForJob(supabase, profile, jobId)
 	]);
 
-	const pageData = buildOperatorJobDetailPageData(job, driver, attemptedNote);
+	const pageData = buildOperatorJobDetailPageData(job, driver, attemptedNote, pod);
 	return applyJobDetailPlanFeatures(pageData, plan, preview);
 }

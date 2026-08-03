@@ -117,6 +117,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      blockchain_receipts: {
+        Row: {
+          company_id: string;
+          confirmed_at: string | null;
+          created_at: string;
+          id: string;
+          reference_id: string;
+          reference_type: 'proof_of_delivery' | 'route_data';
+          retry_count: number;
+          sha256_hash: string;
+          solana_transaction_id: string | null;
+          status: 'pending' | 'confirmed' | 'failed';
+        };
+        Insert: {
+          company_id: string;
+          confirmed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          reference_id: string;
+          reference_type: 'proof_of_delivery' | 'route_data';
+          retry_count?: number;
+          sha256_hash: string;
+          solana_transaction_id?: string | null;
+          status?: 'pending' | 'confirmed' | 'failed';
+        };
+        Update: {
+          company_id?: string;
+          confirmed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          reference_id?: string;
+          reference_type?: 'proof_of_delivery' | 'route_data';
+          retry_count?: number;
+          sha256_hash?: string;
+          solana_transaction_id?: string | null;
+          status?: 'pending' | 'confirmed' | 'failed';
+        };
+        Relationships: [];
+      };
       proof_of_delivery: {
         Row: {
           blockchain_confirmed: boolean;
@@ -162,6 +201,63 @@ export type Database = {
           job_id?: string;
           recipient_name?: string | null;
           type?: string;
+        };
+        Relationships: [];
+      };
+      route_data: {
+        Row: {
+          blockchain_confirmed: boolean;
+          blockchain_hash: string | null;
+          company_id: string;
+          created_at: string;
+          day_of_week: string;
+          destination_address: string;
+          destination_lat: number;
+          destination_lng: number;
+          id: string;
+          job_id: string;
+          origin_address: string;
+          origin_lat: number;
+          origin_lng: number;
+          return_leg_empty: boolean | null;
+          time_of_day: string;
+          vehicle_type: string;
+        };
+        Insert: {
+          blockchain_confirmed?: boolean;
+          blockchain_hash?: string | null;
+          company_id: string;
+          created_at?: string;
+          day_of_week: string;
+          destination_address: string;
+          destination_lat: number;
+          destination_lng: number;
+          id?: string;
+          job_id: string;
+          origin_address: string;
+          origin_lat: number;
+          origin_lng: number;
+          return_leg_empty?: boolean | null;
+          time_of_day: string;
+          vehicle_type: string;
+        };
+        Update: {
+          blockchain_confirmed?: boolean;
+          blockchain_hash?: string | null;
+          company_id?: string;
+          created_at?: string;
+          day_of_week?: string;
+          destination_address?: string;
+          destination_lat?: number;
+          destination_lng?: number;
+          id?: string;
+          job_id?: string;
+          origin_address?: string;
+          origin_lat?: number;
+          origin_lng?: number;
+          return_leg_empty?: boolean | null;
+          time_of_day?: string;
+          vehicle_type?: string;
         };
         Relationships: [];
       };

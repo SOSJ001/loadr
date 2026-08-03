@@ -14,6 +14,7 @@ export const OFFLINE_PAGE_UNAVAILABLE_MESSAGE =
 export { isBrowserOffline, isDriverConnectivityOffline, readPersistedOffline };
 
 export function isNetworkFailure(error: unknown): boolean {
+	if (error == null) return false;
 	if (isConnectError(error)) return true;
 
 	if (error instanceof TypeError) {

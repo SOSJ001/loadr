@@ -1,13 +1,7 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import {
-	applyJobDetailPlanFeatures,
-	getMockOperatorJobDetail,
-	resolveMockOperatorJobDetailVariant
-} from '$lib/data/mock-operator-job-detail';
+import { fail, redirect } from '@sveltejs/kit';
 import { mockDriverJobDetailAttempted, mockDriverJobDetailComplete, mockDriverJobDetailInProgress, mockDriverJobDetailPending } from '$lib/data/mock-driver-job-detail';
 import { requireDriverPage, requireJobsAccess } from '$lib/server/auth';
 import { isJobsError, startJobForDriver } from '$lib/server/jobs';
-import { fetchOperatorJobDetailPageData } from '$lib/server/operator-job-detail';
 import { isDriverJobDetailPreviewMode } from '$lib/utils/driver-job-detail-theme';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -24,43 +18,15 @@ function mockDriverJobDetailForPreview(preview: string | null) {
 	return mockDriverJobDetailPending();
 }
 
-export const load: PageServerLoad = async ({ locals, params, url, parent }) => {
+export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const profile = requireJobsAccess(locals.profile);
-	const { plan } = await parent();
 	const preview = url.searchParams.get('preview');
 
-	if (profile.role === 'admin' && params.id.startsWith('mock-')) {
-		const variant = resolveMockOperatorJobDetailVariant(params.id, preview);
-		const pageData = applyJobDetailPlanFeatures(
-			getMockOperatorJobDetail(params.id, variant),
-			plan,
-			preview
-		);
-
-		return {
-			profile,
-			preview: true,
-			pageData
-		};
-	}
-
 	if (profile.role === 'admin') {
-		const pageData = await fetchOperatorJobDetailPageData(
-			locals.supabase,
-			profile,
-			params.id,
-			plan,
-			preview
-		);
-
-		if (!pageData) {
-			error(404, 'Not found');
-		}
-
+		// Operator job detail loads in +page.ts (universal) — page.server fields were not reaching page.data
 		return {
 			profile,
-			preview: false,
-			pageData
+			preview: false
 		};
 	}
 

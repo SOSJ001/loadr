@@ -33,8 +33,8 @@ export default defineConfig({
 				display: 'standalone',
 				display_override: ['standalone', 'browser'],
 				prefer_related_applications: false,
-				background_color: '#f9fafb',
-				theme_color: '#111827',
+				background_color: '#0f172a',
+				theme_color: '#0f172a',
 				icons: [
 					{
 						src: '/icons/icon-192.png',
@@ -67,18 +67,6 @@ export default defineConfig({
 				navigateFallback: null,
 				// Required in dev when precache manifest is empty (no build output yet).
 				runtimeCaching: [
-					{
-						urlPattern: /\/jobs(?:\/.*)?\/__data\.json(?:\?.*)?$/i,
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'loadr-jobs-data',
-							networkTimeoutSeconds: 5,
-							expiration: {
-								maxEntries: 32,
-								maxAgeSeconds: 60 * 60 * 24
-							}
-						}
-					},
 					{
 						urlPattern: /\/api\/v1\/.*/i,
 						handler: 'NetworkFirst',

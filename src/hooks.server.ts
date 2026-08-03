@@ -25,10 +25,13 @@ const supabase: Handle = async ({ event, resolve }) => {
 
 	try {
 		const {
-			data: { session }
+			data: { session },
+			error: sessionError
 		} = await event.locals.supabase.auth.getSession();
 
-		if (session) {
+		if (sessionError?.code === 'refresh_token_not_found') {
+			await event.locals.supabase.auth.signOut();
+		} else if (session) {
 			event.locals.session = session;
 			event.locals.user = session.user;
 
@@ -44,7 +47,16 @@ const supabase: Handle = async ({ event, resolve }) => {
 			}
 		}
 	} catch (err) {
-		console.error('[loadr] Session lookup failed:', err);
+		const code =
+			typeof err === 'object' && err !== null && 'code' in err
+				? String((err as { code?: unknown }).code)
+				: '';
+
+		if (code === 'refresh_token_not_found') {
+			await event.locals.supabase.auth.signOut();
+		} else {
+			console.error('[loadr] Session lookup failed:', err);
+		}
 	}
 
 	return resolve(event, {
@@ -57,7 +69,10 @@ const supabase: Handle = async ({ event, resolve }) => {
 const authGuard: Handle = async ({ event, resolve }) => {
 	const { pathname } = event.url;
 
-	if (pathname.startsWith('/api/v1/subscriptions/webhook')) {
+	if (
+		pathname.startsWith('/api/v1/subscriptions/webhook') ||
+		pathname.startsWith('/api/cron/')
+	) {
 		return resolve(event);
 	}
 
