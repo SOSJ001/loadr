@@ -103,7 +103,9 @@ export default defineConfig(({ mode }) => ({
 		})
 	],
 	ssr: {
-		noExternal: ['@lucide/svelte']
+		noExternal: ['@lucide/svelte'],
+		// Keep Solana stack as Node externals — bundling breaks rpc-websockets/uuid on Vercel.
+		external: ['@solana/web3.js', 'bs58', 'rpc-websockets']
 	},
 	server: {
 		allowedHosts: []

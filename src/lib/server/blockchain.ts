@@ -1,5 +1,4 @@
 import { createAdminClient } from '$lib/server/supabase';
-import { writeToMemoProgram } from '$lib/server/solana';
 import type { Database } from '$lib/types/database';
 
 type BlockchainReferenceType = Database['public']['Tables']['blockchain_receipts']['Row']['reference_type'];
@@ -90,6 +89,7 @@ export async function processBlockchainQueue(): Promise<BlockchainQueueSummary> 
 		summary.processed += 1;
 
 		try {
+			const { writeToMemoProgram } = await import('$lib/server/solana');
 			const signature = await writeToMemoProgram(receipt.sha256_hash);
 			const confirmedAt = new Date().toISOString();
 

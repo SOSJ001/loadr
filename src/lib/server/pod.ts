@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import { queueBlockchainWrite } from '$lib/server/blockchain';
 import { JobsError, completeJobForDriver, getJobForUser } from '$lib/server/jobs';
 import { notifyJobComplete } from '$lib/server/notifications';
 import { createAdminClient } from '$lib/server/supabase';
@@ -182,6 +181,7 @@ export async function uploadPod(
 		throw new JobsError('Job not found', 'NOT_FOUND', 404);
 	}
 
+	const { queueBlockchainWrite } = await import('$lib/server/blockchain');
 	await queueBlockchainWrite('proof_of_delivery', podRow.id, hash, existing.company_id);
 
 	await notifyJobComplete(supabase, {
