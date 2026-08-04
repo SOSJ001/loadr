@@ -3,7 +3,7 @@ import { CRON_SECRET } from '$env/static/private';
 import { processBlockchainQueue } from '$lib/server/blockchain';
 import type { RequestHandler } from './$types';
 
-/** GET /api/cron/blockchain — Vercel Cron processor for pending Solana writes */
+/** GET /api/cron/blockchain — scheduled cron processor (GitHub Actions) for pending Solana writes */
 export const GET: RequestHandler = async ({ request }) => {
 	const authHeader = request.headers.get('authorization');
 	if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {

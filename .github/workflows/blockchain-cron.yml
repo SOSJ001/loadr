@@ -1,0 +1,20 @@
+name: Blockchain cron
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  process-blockchain-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process pending blockchain receipts
+        run: |
+          response=$(curl -fsS \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/blockchain")
+          echo "$response"
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
