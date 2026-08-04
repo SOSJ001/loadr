@@ -2,6 +2,7 @@ name: Blockchain cron
 
 on:
   schedule:
+    # Runs only from the repository default branch (usually main).
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
@@ -11,10 +12,22 @@ jobs:
     steps:
       - name: Process pending blockchain receipts
         run: |
-          response=$(curl -fsS \
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL and CRON_SECRET repository secrets are required."
+            exit 1
+          fi
+
+          APP_URL="${APP_URL%/}"
+          http_code=$(curl -sS -w "%{http_code}" -o /tmp/cron-response.txt \
             -H "Authorization: Bearer ${CRON_SECRET}" \
             "${APP_URL}/api/cron/blockchain")
-          echo "$response"
+          echo "HTTP ${http_code}"
+          cat /tmp/cron-response.txt
+          echo
+
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            exit 1
+          fi
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           APP_URL: ${{ secrets.APP_URL }}

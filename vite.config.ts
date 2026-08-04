@@ -3,7 +3,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
 	plugins: [
 		tailwindcss(),
 		sveltekit(),
@@ -63,7 +63,11 @@ export default defineConfig({
 				]
 			},
 			workbox: {
-				globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2,webmanifest}'],
+				// Dev has no build output in dev-dist yet — empty precache avoids workbox warnings.
+				globPatterns:
+					mode === 'development'
+						? []
+						: ['**/*.{js,css,html,ico,png,svg,webp,woff2,webmanifest}'],
 				navigateFallback: null,
 				// Required in dev when precache manifest is empty (no build output yet).
 				runtimeCaching: [
@@ -104,4 +108,4 @@ export default defineConfig({
 	server: {
 		allowedHosts: []
 	}
-});
+}));
