@@ -217,18 +217,26 @@ export async function uploadPodForJob(
 }
 
 async function loadBlockchainReceipt(referenceId: string) {
-	const admin = createAdminClient();
-	const { data, error } = await admin
-		.from('blockchain_receipts')
-		.select('status, solana_transaction_id')
-		.eq('reference_type', 'proof_of_delivery')
-		.eq('reference_id', referenceId)
-		.order('created_at', { ascending: false })
-		.limit(1)
-		.maybeSingle();
+	try {
+		const admin = createAdminClient();
+		const { data, error } = await admin
+			.from('blockchain_receipts')
+			.select('status, solana_transaction_id')
+			.eq('reference_type', 'proof_of_delivery')
+			.eq('reference_id', referenceId)
+			.order('created_at', { ascending: false })
+			.limit(1)
+			.maybeSingle();
 
-	if (error) throw error;
-	return data;
+		if (error) {
+			console.error('[loadr] blockchain receipt lookup failed:', error.message);
+			return null;
+		}
+		return data;
+	} catch (err) {
+		console.error('[loadr] blockchain receipt lookup failed:', err);
+		return null;
+	}
 }
 
 /** Operator and assigned driver can read PoD metadata for a visible job. */

@@ -38,27 +38,6 @@ export const load: PageLoad = async ({ url, data, fetch }) => {
 			drivers: unknown[];
 		};
 
-		// #region agent log
-		fetch('http://127.0.0.1:7339/ingest/beb9541b-9fab-4328-8b18-a7b052a2e513', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'f82c8b' },
-			body: JSON.stringify({
-				sessionId: 'f82c8b',
-				runId: 'regression-v1',
-				hypothesisId: 'H2-H5',
-				location: 'jobs/+page.ts:admin-api',
-				message: 'admin api load',
-				data: {
-					browser,
-					jobsCount: operatorData.jobs.length,
-					driversCount: operatorData.drivers.length,
-					status: response.status
-				},
-				timestamp: Date.now()
-			})
-		}).catch(() => {});
-		// #endregion
-
 		return { preview: false, ...operatorData };
 	}
 

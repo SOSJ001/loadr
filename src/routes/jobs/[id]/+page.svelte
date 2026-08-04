@@ -87,21 +87,6 @@
 				const body = (await response.json()) as { pageData: OperatorJobDetailPageData };
 				stickyOperatorData = body.pageData;
 				clientFetchError = null;
-				// #region agent log
-				fetch('http://127.0.0.1:7339/ingest/beb9541b-9fab-4328-8b18-a7b052a2e513', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'f82c8b' },
-					body: JSON.stringify({
-						sessionId: 'f82c8b',
-						runId: 'job-detail-v2',
-						hypothesisId: 'H8',
-						location: 'jobs/[id]/+page.svelte:client-fetch',
-						message: 'client fetch loaded job detail',
-						data: { jobId, hasPageData: body.pageData != null },
-						timestamp: Date.now()
-					})
-				}).catch(() => {});
-				// #endregion
 			})
 			.catch(() => {
 				if (!cancelled) clientFetchError = 'Failed to load job';
@@ -132,33 +117,6 @@
 		}
 		return 'blank';
 	});
-
-	// #region agent log
-	$effect(() => {
-		fetch('http://127.0.0.1:7339/ingest/beb9541b-9fab-4328-8b18-a7b052a2e513', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'f82c8b' },
-			body: JSON.stringify({
-				sessionId: 'f82c8b',
-				runId: 'job-detail-v1',
-				hypothesisId: 'H1-H4',
-				location: 'jobs/[id]/+page.svelte:render',
-				message: 'job detail render branch',
-				data: {
-					branch: renderBranch,
-					role,
-					jobId: page.params.id,
-					propsKeys: Object.keys(propsRecord),
-					pageKeys: Object.keys(pageRecord),
-					propsHasPageData: mergedRecord.pageData != null,
-					hasStickyOperator: stickyOperatorData != null,
-					navigating: Boolean(navigating.to)
-				},
-				timestamp: Date.now()
-			})
-		}).catch(() => {});
-	});
-	// #endregion
 </script>
 
 {#if showLoading}

@@ -101,35 +101,6 @@
 		}
 		return 'blank';
 	});
-
-	// #region agent log
-	$effect(() => {
-		const propsKeys = Object.keys(propsRecord);
-		const pageKeys = Object.keys(pageRecord);
-		fetch('http://127.0.0.1:7339/ingest/beb9541b-9fab-4328-8b18-a7b052a2e513', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'f82c8b' },
-			body: JSON.stringify({
-				sessionId: 'f82c8b',
-				runId: 'regression-v1',
-				hypothesisId: 'H1-H3',
-				location: 'jobs/+page.svelte:render',
-				message: 'render branch snapshot',
-				data: {
-					branch: renderBranch,
-					role,
-					propsKeys,
-					pageKeys,
-					propsHasJobs: Array.isArray(propsRecord.jobs),
-					pageHasJobs: Array.isArray(pageRecord.jobs),
-					hasStickyOperator: stickyOperatorData !== null,
-					navigating: Boolean(navigating.to)
-				},
-				timestamp: Date.now()
-			})
-		}).catch(() => {});
-	});
-	// #endregion
 </script>
 
 {#if showLoading}

@@ -26,17 +26,23 @@ export const GET: RequestHandler = async (event) => {
 	}
 
 	const preview = event.url.searchParams.get('preview');
-	const pageData = await fetchOperatorJobDetailPageData(
-		event.locals.supabase,
-		profile,
-		event.params.id,
-		plan,
-		preview
-	);
 
-	if (!pageData) {
-		error(404, 'Not found');
+	try {
+		const pageData = await fetchOperatorJobDetailPageData(
+			event.locals.supabase,
+			profile,
+			event.params.id,
+			plan,
+			preview
+		);
+
+		if (!pageData) {
+			error(404, 'Not found');
+		}
+
+		return json({ pageData });
+	} catch (err) {
+		console.error('[loadr] operator job detail failed:', event.params.id, err);
+		error(500, 'Failed to load job detail');
 	}
-
-	return json({ pageData });
 };
