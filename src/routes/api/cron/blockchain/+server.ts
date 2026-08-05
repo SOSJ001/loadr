@@ -33,6 +33,6 @@ export const GET: RequestHandler = async ({ request }) => {
 	} catch (err) {
 		console.error('[loadr] blockchain cron failed:', err);
 		const message = err instanceof Error ? err.message : 'Cron processing failed';
-		return json({ processed: 0, confirmed: 0, failed: 0, error: message }, { status: 500 });
+		return json({ processed: 0, confirmed: 0, failed: 0, errors: [], error: message }, { status: 500 });
 	}
 };

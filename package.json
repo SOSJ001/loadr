@@ -12,14 +12,15 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check .",
 		"format": "prettier --write .",
-		"icons": "node scripts/generate-pwa-icons.mjs"
+		"icons": "node scripts/generate-pwa-icons.mjs",
+		"solana:feeder": "node scripts/check-feeder.mjs"
 	},
 	"dependencies": {
 		"@lucide/svelte": "^1.21.0",
 		"@solana/web3.js": "^1.98.4",
 		"@supabase/ssr": "^0.6.1",
 		"@supabase/supabase-js": "^2.49.8",
-		"bs58": "^6.0.0",
+		"bs58": "^4.0.1",
 		"pdf-lib": "^1.17.1",
 		"uuid": "8.3.2"
 	},

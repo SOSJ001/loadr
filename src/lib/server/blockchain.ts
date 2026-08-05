@@ -10,7 +10,13 @@ export type BlockchainQueueSummary = {
 	processed: number;
 	confirmed: number;
 	failed: number;
-	errors?: string[];
+	errors: string[];
+	feeder?: {
+		rpc: string;
+		publicKey: string;
+		balanceSol: number;
+		ready: boolean;
+	};
 };
 
 /** Queue a hash for async Solana write — never blocks on chain submission. */
@@ -84,14 +90,39 @@ export async function processBlockchainQueue(): Promise<BlockchainQueueSummary> 
 		.limit(BATCH_LIMIT);
 
 	if (error) throw error;
-	if (!pending?.length) return summary;
+	if (!pending?.length) {
+		return { processed: 0, confirmed: 0, failed: 0, errors: [] };
+	}
+
+	const { getSolanaFeederStatus } = await import('$lib/server/solana');
+	const feeder = await getSolanaFeederStatus();
+	summary.feeder = {
+		rpc: feeder.rpc,
+		publicKey: feeder.publicKey,
+		balanceSol: feeder.balanceSol,
+		ready: feeder.ready
+	};
+
+	if (!feeder.ready) {
+		summary.errors.push(
+			`Feeder wallet ${feeder.publicKey} has 0 SOL on ${feeder.rpc} — run: solana airdrop 2 ${feeder.publicKey} --url devnet`
+		);
+		return summary;
+	}
 
 	for (const receipt of pending) {
 		summary.processed += 1;
 
 		try {
 			const { writeToMemoProgram } = await import('$lib/server/solana');
-			const signature = await writeToMemoProgram(receipt.sha256_hash);
+			let signature: string;
+			try {
+				signature = await writeToMemoProgram(receipt.sha256_hash);
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				throw new Error(`solana: ${message}`);
+			}
+
 			const confirmedAt = new Date().toISOString();
 
 			const { error: updateError } = await admin
@@ -103,9 +134,17 @@ export async function processBlockchainQueue(): Promise<BlockchainQueueSummary> 
 				})
 				.eq('id', receipt.id);
 
-			if (updateError) throw updateError;
+			if (updateError) {
+				throw new Error(`receipt-update: ${updateError.message}`);
+			}
 
-			await confirmReference(receipt.reference_type, receipt.reference_id, receipt.sha256_hash);
+			try {
+				await confirmReference(receipt.reference_type, receipt.reference_id, receipt.sha256_hash);
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				throw new Error(`pod-update: ${message}`);
+			}
+
 			summary.confirmed += 1;
 		} catch (err) {
 			const nextRetry = receipt.retry_count + 1;
@@ -113,7 +152,7 @@ export async function processBlockchainQueue(): Promise<BlockchainQueueSummary> 
 			const message = err instanceof Error ? err.message : String(err);
 
 			console.error('[loadr] blockchain write failed:', receipt.id, err);
-			summary.errors?.push(`${receipt.id.slice(0, 8)}: ${message.slice(0, 200)}`);
+			summary.errors.push(`${receipt.id.slice(0, 8)}: ${message.slice(0, 400)}`);
 
 			const { error: retryError } = await admin
 				.from('blockchain_receipts')
