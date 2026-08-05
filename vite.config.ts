@@ -103,19 +103,7 @@ export default defineConfig(({ mode }) => ({
 		})
 	],
 	ssr: {
-		// Bundle Solana + transitive deps for Vercel (external/missing modules crash at runtime).
-		noExternal: [
-			'@lucide/svelte',
-			'@solana/web3.js',
-			'bs58',
-			'rpc-websockets',
-			'jayson',
-			'uuid',
-			'ws',
-			'eventemitter3',
-			'node-fetch',
-			'@babel/runtime'
-		]
+		noExternal: ['@lucide/svelte']
 	},
 	server: {
 		allowedHosts: []

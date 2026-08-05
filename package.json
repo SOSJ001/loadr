@@ -22,7 +22,6 @@
 		"@supabase/supabase-js": "^2.49.8",
 		"bs58": "^4.0.1",
 		"pdf-lib": "^1.17.1",
-		"rpc-websockets": "7.11.1",
 		"uuid": "8.3.2"
 	},
 	"devDependencies": {
@@ -44,12 +43,6 @@
 		"vite": "^8.0.16"
 	},
 	"overrides": {
-		"uuid": "8.3.2",
-		"@solana/web3.js": {
-			"rpc-websockets": "7.11.1"
-		},
-		"rpc-websockets": {
-			"uuid": "8.3.2"
-		}
+		"uuid": "8.3.2"
 	}
 }
