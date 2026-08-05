@@ -8,7 +8,7 @@ export const config = {
 	maxDuration: 60
 };
 
-/** GET /api/cron/blockchain — scheduled cron processor (GitHub Actions) for pending Solana writes */
+/** GET /api/cron/blockchain — external cron processor (every 5 min) for pending Solana writes */
 export const GET: RequestHandler = async ({ request }) => {
 	const authHeader = request.headers.get('authorization');
 	if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {

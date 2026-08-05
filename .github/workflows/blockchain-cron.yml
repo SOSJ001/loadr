@@ -1,9 +1,8 @@
 name: Blockchain cron
 
+# Scheduled runs use an external HTTP cron (see .env.example) — GitHub schedule is
+# unreliable on free private repos (often hours apart, not every 5 minutes).
 on:
-  schedule:
-    # Runs only from the repository default branch (usually main).
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:

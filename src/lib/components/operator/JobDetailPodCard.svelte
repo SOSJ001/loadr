@@ -8,7 +8,7 @@
 		OperatorJobPodSubmitted
 	} from '$lib/types/operator-job-detail';
 	import { formatJobDetailPodTimestamp } from '$lib/utils/operator-job-detail';
-	import { Camera, Clock, Download, Link, ShieldCheck, User } from '@lucide/svelte';
+	import { Camera, Check, Clock, Download, Link, ShieldCheck, User } from '@lucide/svelte';
 
 	type Props = {
 		jobId: string;
@@ -19,6 +19,7 @@
 
 	let pod = $state(initialPod);
 	let pollIntervalId = $state<number | null>(null);
+	let hashCopied = $state(false);
 	const cardClass = jobDetailCardClass;
 	const isMockJob = $derived(jobId.startsWith('mock-'));
 	const imageUrl = $derived(`/api/v1/jobs/${jobId}/pod/file`);
@@ -40,6 +41,10 @@
 	async function copyRef(value: string) {
 		try {
 			await navigator.clipboard.writeText(value);
+			hashCopied = true;
+			window.setTimeout(() => {
+				hashCopied = false;
+			}, 2000);
 		} catch {
 			// ignore
 		}
@@ -150,13 +155,13 @@
 					{formatJobDetailPodTimestamp(pod.timestamp)}
 				</dd>
 			</div>
-			<div class="flex w-full flex-col gap-2">
-				<dt class="flex items-center gap-1.5 font-inter text-[13px] text-gray-500 dark:text-slate-400">
+			<div class="flex w-full items-center justify-between gap-4">
+				<dt class="flex shrink-0 items-center gap-1.5 font-inter text-[13px] text-gray-500 dark:text-slate-400">
 					<Link size={14} aria-hidden="true" />
 					Blockchain ref
 				</dt>
 				{#if pod.blockchain_status === 'pending'}
-					<dd>
+					<dd class="shrink-0">
 						<p
 							class="font-inter inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 dark:border-[#422006] dark:bg-[#292524] dark:text-[#d97706]"
 						>
@@ -164,9 +169,9 @@
 						</p>
 					</dd>
 				{:else}
-					<dd class="flex items-center justify-end gap-1">
+					<dd class="flex min-w-0 items-center justify-end gap-1">
 						<span
-							class="font-mono text-xs text-gray-500 dark:text-slate-400"
+							class="truncate font-mono text-xs text-gray-500 dark:text-slate-400"
 							style="font-family: 'DM Mono', ui-monospace, monospace"
 						>
 							{pod.blockchain_ref}
@@ -174,11 +179,17 @@
 						{#if pod.blockchain_hash}
 							<button
 								type="button"
-								class="text-gray-400 transition-colors hover:text-gray-700 dark:text-slate-500 dark:hover:text-slate-300"
-								aria-label="Copy blockchain hash"
+								class="shrink-0 transition-colors {hashCopied
+									? 'text-green-600 dark:text-green-400'
+									: 'text-gray-400 hover:text-gray-700 dark:text-slate-500 dark:hover:text-slate-300'}"
+								aria-label={hashCopied ? 'Copied' : 'Copy blockchain hash'}
 								onclick={() => copyRef(pod.blockchain_hash ?? pod.blockchain_ref)}
 							>
-								<CopyIcon />
+								{#if hashCopied}
+									<Check size={12} aria-hidden="true" stroke-width={2.5} />
+								{:else}
+									<CopyIcon />
+								{/if}
 							</button>
 						{/if}
 					</dd>
