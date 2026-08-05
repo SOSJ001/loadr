@@ -10,6 +10,7 @@ export type BlockchainQueueSummary = {
 	processed: number;
 	confirmed: number;
 	failed: number;
+	errors?: string[];
 };
 
 /** Queue a hash for async Solana write — never blocks on chain submission. */
@@ -72,7 +73,7 @@ async function confirmReference(
 /** Background processor — fetch pending receipts and write to Solana. */
 export async function processBlockchainQueue(): Promise<BlockchainQueueSummary> {
 	const admin = createAdminClient();
-	const summary: BlockchainQueueSummary = { processed: 0, confirmed: 0, failed: 0 };
+	const summary: BlockchainQueueSummary = { processed: 0, confirmed: 0, failed: 0, errors: [] };
 
 	const { data: pending, error } = await admin
 		.from('blockchain_receipts')
@@ -109,8 +110,10 @@ export async function processBlockchainQueue(): Promise<BlockchainQueueSummary> 
 		} catch (err) {
 			const nextRetry = receipt.retry_count + 1;
 			const failed = nextRetry >= MAX_RETRIES;
+			const message = err instanceof Error ? err.message : String(err);
 
 			console.error('[loadr] blockchain write failed:', receipt.id, err);
+			summary.errors?.push(`${receipt.id.slice(0, 8)}: ${message.slice(0, 200)}`);
 
 			const { error: retryError } = await admin
 				.from('blockchain_receipts')

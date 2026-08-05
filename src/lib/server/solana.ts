@@ -4,8 +4,7 @@ import {
 	Keypair,
 	PublicKey,
 	Transaction,
-	TransactionInstruction,
-	sendAndConfirmTransaction
+	TransactionInstruction
 } from '@solana/web3.js';
 import { SOLANA_FEEDER_WALLET_SECRET, SOLANA_RPC_URL } from '$env/static/private';
 
@@ -20,13 +19,33 @@ function loadFeederKeypair(): Keypair {
 	return Keypair.fromSecretKey(secretKey);
 }
 
+function createRpcConnection(rpcUrl: string): Connection {
+	const isNgrok = /ngrok/i.test(rpcUrl);
+
+	return new Connection(rpcUrl, {
+		commitment: 'confirmed',
+		confirmTransactionInitialTimeout: 60_000,
+		httpHeaders: isNgrok ? { 'ngrok-skip-browser-warning': '69420' } : undefined,
+		fetch: isNgrok
+			? (url, init) =>
+					fetch(url, {
+						...init,
+						headers: {
+							...init?.headers,
+							'ngrok-skip-browser-warning': '69420'
+						}
+					})
+			: undefined
+	});
+}
+
 /** Write a SHA-256 hash to the Solana Memo Program. Returns the transaction signature. */
 export async function writeToMemoProgram(sha256Hash: string): Promise<string> {
 	if (!SOLANA_RPC_URL) {
 		throw new Error('SOLANA_RPC_URL is not configured');
 	}
 
-	const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
+	const connection = createRpcConnection(SOLANA_RPC_URL);
 	const signer = loadFeederKeypair();
 
 	const instruction = new TransactionInstruction({
@@ -40,10 +59,23 @@ export async function writeToMemoProgram(sha256Hash: string): Promise<string> {
 	transaction.recentBlockhash = blockhash;
 	transaction.lastValidBlockHeight = lastValidBlockHeight;
 	transaction.feePayer = signer.publicKey;
+	transaction.sign(signer);
 
-	return sendAndConfirmTransaction(connection, transaction, [signer], {
-		commitment: 'confirmed'
+	const signature = await connection.sendRawTransaction(transaction.serialize(), {
+		skipPreflight: false,
+		preflightCommitment: 'confirmed'
 	});
+
+	const { value } = await connection.confirmTransaction(
+		{ signature, blockhash, lastValidBlockHeight },
+		'confirmed'
+	);
+
+	if (value.err) {
+		throw new Error(`Transaction failed: ${JSON.stringify(value.err)}`);
+	}
+
+	return signature;
 }
 
 /** @deprecated Use writeToMemoProgram */
