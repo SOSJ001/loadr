@@ -103,8 +103,19 @@ export default defineConfig(({ mode }) => ({
 		})
 	],
 	ssr: {
-		// Bundle Solana for Vercel — externalizing breaks rpc-websockets (CommonClient undefined).
-		noExternal: ['@lucide/svelte', '@solana/web3.js', 'bs58', 'rpc-websockets', 'jayson']
+		// Bundle Solana + transitive deps for Vercel (external/missing modules crash at runtime).
+		noExternal: [
+			'@lucide/svelte',
+			'@solana/web3.js',
+			'bs58',
+			'rpc-websockets',
+			'jayson',
+			'uuid',
+			'ws',
+			'eventemitter3',
+			'node-fetch',
+			'@babel/runtime'
+		]
 	},
 	server: {
 		allowedHosts: []
